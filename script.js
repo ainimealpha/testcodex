@@ -1,10 +1,24 @@
-// script.js - Revisi: Page1 modal-only categories, Page2 item layout vertical (image,name,tags,rarity), Page3 rarity inline & mobile-friendly slider nav below
+// script.js - Revisi final: safeguard DATA checks, opsi showTitle untuk checklist,
+// restore applyChecklistFilters helper, perbaikan fokus modal, slider lebih stabil.
+// Mobile-first behavior preserved.
+// Pastikan data.js ter-load dan mendefinisikan DATA (object) & optional PLACEHOLDER.
+
 (function(){
   'use strict';
 
-  const FALLBACK = (typeof PLACEHOLDER !== 'undefined') ? PLACEHOLDER : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'%3E%3Crect width='100%25' height='100%25' fill='%23ffe9a8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23333333' font-family='Arial' font-size='24'%3ENo Image%3C/text%3E%3C/svg%3E";
+  /* ===========================
+     Safeguard / Globals
+     =========================== */
+  const FALLBACK = (typeof PLACEHOLDER !== 'undefined')
+    ? PLACEHOLDER
+    : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'%3E%3Crect width='100%25' height='100%25' fill='%23ffe9a8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23333333' font-family='Arial' font-size='24'%3ENo Image%3C/text%3E%3C/svg%3E";
 
-  // Navigation helpers
+  // Small helper: safe access to DATA
+  function hasData(){
+    return (typeof DATA !== 'undefined') && (DATA && typeof DATA === 'object');
+  }
+
+  // Navigation helpers (exposed for inline onclick)
   function goHome(){ window.location.href = "index.html"; }
   function goBackToHome(){ window.location.href = "index.html"; }
   function goToItemsPage(){ window.location.href = "items.html"; }
@@ -13,278 +27,235 @@
   window.goBackToHome = goBackToHome;
   window.goToItemsPage = goToItemsPage;
 
+  /* ===========================
+     Theme / UI helpers
+     =========================== */
   const CATEGORY_THEME = {
-    CHARACTER: { bg: "linear-gradient(180deg,#f7eef8,#ffeef6)", tagBg: "#ffd6da", accent: "#ff6b6b" },
-    AREA:      { bg: "linear-gradient(180deg,#fff8f0,#fff0e6)", tagBg: "#ffe6c9", accent: "#ff9f43" },
-    PET:       { bg: "linear-gradient(180deg,#fffdf5,#fff9e6)", tagBg: "#fff5b2", accent: "#ffd54f" },
-    MONSTER:   { bg: "linear-gradient(180deg,#f3e8ff,#e8f0ff)", tagBg: "#eadcff", accent: "#9b59b6" },
-    MAGIC:     { bg: "linear-gradient(180deg,#f0fbff,#e6f7ff)", tagBg: "#d6efff", accent: "#4da6ff" },
-    DEFAULT:   { bg: "linear-gradient(180deg,#fff9c4,#ffe082)", tagBg: "#fff3cd", accent: "#ffd54f" }
+    CHARACTER: { tagBg: "#ffd6da", accent: "#ff6b6b", bg: "linear-gradient(180deg,#ffe6e8,#ffd6da)" },
+    AREA:      { tagBg: "#ffe6c9", accent: "#ff9f43", bg: "linear-gradient(180deg,#fff2e6,#ffd9b8)" },
+    PET:       { tagBg: "#fff5b2", accent: "#ffd54f", bg: "linear-gradient(180deg,#fffbe6,#fff4b2)" },
+    MONSTER:   { tagBg: "#eadcff", accent: "#9b59b6", bg: "linear-gradient(180deg,#f3e8ff,#e8d7ff)" },
+    MAGIC:     { tagBg: "#d6efff", accent: "#4da6ff", bg: "linear-gradient(180deg,#e8f4ff,#d0ecff)" },
+    DEFAULT:   { tagBg: "#fff3cd", accent: "#ffd54f", bg: "linear-gradient(180deg,#fff9c4,#ffe082)" }
   };
 
   function applyCategoryTheme(catKey){
     const theme = (catKey && CATEGORY_THEME[catKey]) ? CATEGORY_THEME[catKey] : CATEGORY_THEME.DEFAULT;
-    document.body.style.background = theme.bg;
     document.documentElement.style.setProperty('--tag-bg', theme.tagBg);
     document.documentElement.style.setProperty('--accent-color', theme.accent);
   }
 
+  /* ===========================
+     Data helpers
+     =========================== */
   function findItemById(id){
+    if(!hasData()) return null;
     let found = null;
-    Object.keys(DATA).some(catKey => {
-      return DATA[catKey].items.some(it => {
+    Object.keys(DATA).some(cat => {
+      (DATA[cat].items || []).some(it => {
         if(String(it.id) === String(id)){ found = it; return true; }
         return false;
       });
+      return !!found;
     });
     return found;
   }
-  function findCategoryByItemId(id){
-    let foundKey = null;
-    Object.keys(DATA).some(catKey => {
-      if(DATA[catKey].items.some(it => String(it.id) === String(id))){ foundKey = catKey; return true; }
-      return false;
-    });
-    return foundKey;
-  }
 
-  // ---------- PAGE 1 ----------
+  /* ===========================
+     PAGE 1: Category modal (3-col grid)
+     =========================== */
   function buildCategoryCardForModal(key){
-    const cat = DATA[key];
-    const firstItem = (cat && cat.items && cat.items[0]) ? cat.items[0] : null;
-    const thumb = (firstItem && firstItem.images && firstItem.images.main) ? firstItem.images.main : FALLBACK;
+    const cat = (hasData() && DATA[key]) ? DATA[key] : { title: key, items: [] };
+    const first = (cat.items && cat.items[0]) ? cat.items[0] : null;
+    const thumb = (first && first.images && first.images.main) ? first.images.main : FALLBACK;
+
     const card = document.createElement('div');
-    card.className = "card cat-card";
+    card.className = "card cat-card modal-cat-card";
     card.tabIndex = 0;
 
     const img = document.createElement('img');
     img.src = thumb;
-    img.alt = `${cat.title || key} preview`;
-    img.loading = "lazy";
-    img.style.borderRadius = "10px";
-    img.style.width = "100%";
-    img.style.height = "120px";
-    img.style.objectFit = "cover";
+    img.alt = cat.title || key;
+    img.loading = 'lazy';
+    img.className = 'modal-cat-thumb';
     card.appendChild(img);
 
-    const h3 = document.createElement('h3');
-    h3.textContent = cat.title || key;
-    card.appendChild(h3);
+    const h = document.createElement('h3');
+    h.textContent = cat.title || key;
+    h.className = 'modal-cat-title';
+    card.appendChild(h);
 
     card.addEventListener('click', () => {
-      localStorage.setItem("activeCategory", key);
+      localStorage.setItem('activeCategory', key);
       closeCategoryModal();
-      window.location.href = "items.html";
+      window.location.href = 'items.html';
     });
+    card.addEventListener('keydown', (e) => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); } });
+
     return card;
   }
 
   function openCategoryModal(){
-    const modal = document.getElementById('categoryModal');
-    if(!modal) return;
-    const grid = document.getElementById('categoryGrid');
-    if(grid){
-      grid.innerHTML = "";
-      Object.keys(DATA).forEach(key => {
-        grid.appendChild(buildCategoryCardForModal(key));
-      });
+    const modal = document.getElementById('categoryModal'); if(!modal) return;
+    const grid = document.getElementById('categoryGrid'); if(!grid) return;
+    grid.innerHTML = "";
+    if(!hasData()){
+      // graceful fallback
+      const info = document.createElement('div'); info.textContent = "No categories available."; grid.appendChild(info); 
+    } else {
+      Object.keys(DATA).forEach(k => grid.appendChild(buildCategoryCardForModal(k)));
     }
     modal.classList.remove('hidden');
+    // focus trap light: focus first card
+    setTimeout(()=>{ const first = modal.querySelector('.modal-cat-card'); if(first) first.focus(); },40);
     document.body.style.overflow = 'hidden';
-    setTimeout(()=> {
-      const first = modal.querySelector('.card');
-      if(first) first.focus();
-    },50);
   }
+
   function closeCategoryModal(){
-    const modal = document.getElementById('categoryModal');
-    if(!modal) return;
+    const modal = document.getElementById('categoryModal'); if(!modal) return;
     modal.classList.add('hidden');
     document.body.style.overflow = '';
+    // restore focus to start button if present
+    const startBtn = document.getElementById('startBtn'); if(startBtn) startBtn.focus();
   }
 
-  // ---------- PAGE 2 ----------
+  /* ===========================
+     PAGE 2: Checklist (filters) + render items (3-column grid)
+     - showChecklist has option showTitle (default true)
+     - applyChecklistFilters helper (reusable)
+     =========================== */
   function uniqueTagsForCategory(catKey){
-    if(!DATA[catKey]) return [];
+    if(!hasData() || !DATA[catKey]) return [];
     const s = new Set();
-    DATA[catKey].items.forEach(it => (it.tags||[]).forEach(t => s.add(t)));
+    (DATA[catKey].items || []).forEach(it => (it.tags||[]).forEach(t => s.add(t)));
     return Array.from(s);
   }
-  function uniqueRaritiesForCategory(catKey){
-    return ["S","A","B","C","D"];
-  }
 
-  function showChecklist(catKey, preSelectedTags = [], preSelectedRarities = [], options = { showTitle: true }){
-    hideChecklist();
-    const panel = document.createElement('div');
-    panel.id = "checklistPanel";
-    panel.className = "checklist-panel";
-
-    const header = document.createElement('div');
-    header.className = "checklist-header";
-    if(options.showTitle){
-      const title = document.createElement('strong');
-      title.textContent = "Filter tags & rarity";
-      header.appendChild(title);
-    }
-    const closeBtn = document.createElement('button');
-    closeBtn.className = "closeChecklist modern-close";
-    closeBtn.type = "button";
-    closeBtn.textContent = "✕";
-    closeBtn.addEventListener('click', hideChecklist);
-    header.appendChild(closeBtn);
-    panel.appendChild(header);
-
-    // Tags section
-    const tagsSection = document.createElement('div');
-    tagsSection.className = "checklist-section";
-    const tagLabel = document.createElement('div');
-    tagLabel.className = "checklist-subtitle";
-    tagLabel.style.fontSize = "15px";
-    tagLabel.textContent = "Tags";
-    tagsSection.appendChild(tagLabel);
-
-    const chips = document.createElement('div');
-    chips.className = "checklist-chips";
-    const tags = uniqueTagsForCategory(catKey);
-    if(tags.length === 0){
-      const no = document.createElement('div');
-      no.className = "checklist-empty";
-      no.textContent = "No tags";
-      chips.appendChild(no);
-    } else {
-      tags.forEach(t => {
-        const label = document.createElement('label');
-        label.className = "chip";
-        const input = document.createElement('input');
-        input.type = "checkbox";
-        input.value = t;
-        if(preSelectedTags && preSelectedTags.includes(t)) input.checked = true;
-        const span = document.createElement('span');
-        span.textContent = t;
-        label.appendChild(input);
-        label.appendChild(span);
-        chips.appendChild(label);
-      });
-    }
-    tagsSection.appendChild(chips);
-    panel.appendChild(tagsSection);
-
-    // Rarity section with spacing
-    const raritySection = document.createElement('div');
-    raritySection.className = "checklist-section";
-    const rarityLabel = document.createElement('div');
-    rarityLabel.className = "checklist-subtitle";
-    rarityLabel.style.marginTop = "12px";
-    rarityLabel.style.fontSize = "15px";
-    rarityLabel.textContent = "Rarity";
-    raritySection.appendChild(rarityLabel);
-
-    const rarityChips = document.createElement('div');
-    rarityChips.className = "checklist-chips rarity-chips-row";
-    const order = ["S","A","B","C","D"];
-    order.forEach(r => {
-      const rx = document.createElement('label');
-      rx.className = "chip rarity-chip";
-      const input = document.createElement('input');
-      input.type = "checkbox";
-      input.value = r;
-      if(preSelectedRarities && preSelectedRarities.includes(r)) input.checked = true;
-      const span = document.createElement('span');
-      span.textContent = r;
-      rx.appendChild(input);
-      rx.appendChild(span);
-      rarityChips.appendChild(rx);
-    });
-    raritySection.appendChild(rarityChips);
-    panel.appendChild(raritySection);
-
-    const actions = document.createElement('div');
-    actions.className = "checklist-actions";
-    const apply = document.createElement('button');
-    apply.type = "button";
-    apply.className = "apply-btn";
-    apply.textContent = "Apply";
-    apply.addEventListener('click', applyChecklistFilters);
-    actions.appendChild(apply);
-    panel.appendChild(actions);
-
-    const container = document.querySelector(".container");
-    const itemsNode = document.getElementById("itemsContainer");
-    if(container){
-      if(itemsNode) container.insertBefore(panel, itemsNode);
-      else container.appendChild(panel);
-      apply.focus();
-    }
-  }
-
-  function hideChecklist(){ const panel = document.getElementById("checklistPanel"); if(panel) panel.remove(); }
-
-  function applyChecklistFilters(){
-    const panel = document.getElementById("checklistPanel");
+  // Apply handler extracted for clarity
+  function applyChecklistFilters(panel){
     if(!panel) return;
-    const allChips = Array.from(panel.querySelectorAll('.chip input'));
-    const tagsChecked = [];
-    const rarityChecked = [];
-    allChips.forEach(inp => {
-      if(inp.checked){
-        if(["S","A","B","C","D"].includes(inp.value)) rarityChecked.push(inp.value);
-        else tagsChecked.push(inp.value);
+    const all = panel.querySelectorAll('.chip input');
+    const tagsChecked = [], rarChecked = [];
+    all.forEach(i => {
+      if(i.checked){
+        if(['S','A','B','C','D'].includes(i.value)) rarChecked.push(i.value);
+        else tagsChecked.push(i.value);
       }
     });
-    const searchInput = document.getElementById("searchInput");
-    if(searchInput) { searchInput.dataset.checkedTags = JSON.stringify(tagsChecked); searchInput.dataset.checkedRarities = JSON.stringify(rarityChecked); }
+    const si = document.getElementById('searchInput');
+    if(si){
+      si.dataset.checkedTags = JSON.stringify(tagsChecked);
+      si.dataset.checkedRarities = JSON.stringify(rarChecked);
+    }
     hideChecklist();
     renderItems();
   }
 
-  function manageChecklistToggle(catKey){
-    const controls = document.querySelector(".controls");
-    if(!controls) return;
-    let btn = document.getElementById("checklistToggleBtn");
+  function showChecklist(catKey, preTags = [], preRarities = [], options = { showTitle: true }){
+    hideChecklist();
+    const panel = document.createElement('div'); panel.id = 'checklistPanel'; panel.className = 'checklist-panel';
+
+    // header (title optional + modern close)
+    const header = document.createElement('div'); header.className = 'checklist-header';
+    if(options.showTitle){
+      const title = document.createElement('div'); title.className = 'checklist-title'; title.textContent = 'Filter tags & rarity';
+      header.appendChild(title);
+    }
+    const closeBtn = document.createElement('button'); closeBtn.className = 'modern-close'; closeBtn.type='button'; closeBtn.textContent='✕';
+    closeBtn.addEventListener('click', hideChecklist);
+    header.appendChild(closeBtn);
+    panel.appendChild(header);
+
+    // Tags
+    const tagLbl = document.createElement('div'); tagLbl.className='checklist-subtitle'; tagLbl.textContent='Tags';
+    panel.appendChild(tagLbl);
+    const tagRow = document.createElement('div'); tagRow.className='checklist-chips';
+    const tags = uniqueTagsForCategory(catKey);
+    if(tags.length === 0){ const none = document.createElement('div'); none.className='checklist-empty'; none.textContent='No tags'; tagRow.appendChild(none); }
+    else {
+      tags.forEach(t => {
+        const lab = document.createElement('label'); lab.className='chip';
+        const inp = document.createElement('input'); inp.type='checkbox'; inp.value = t;
+        if(preTags.includes(t)) inp.checked = true;
+        const sp = document.createElement('span'); sp.textContent = t;
+        lab.appendChild(inp); lab.appendChild(sp); tagRow.appendChild(lab);
+      });
+    }
+    panel.appendChild(tagRow);
+
+    // Rarity
+    const rarLbl = document.createElement('div'); rarLbl.className='checklist-subtitle'; rarLbl.style.marginTop='12px'; rarLbl.textContent='Rarity';
+    panel.appendChild(rarLbl);
+    const rarRow = document.createElement('div'); rarRow.className='checklist-chips rarity-chips-row';
+    ['S','A','B','C','D'].forEach(r => {
+      const lab = document.createElement('label'); lab.className='chip rarity-chip';
+      const inp = document.createElement('input'); inp.type='checkbox'; inp.value = r;
+      if(preRarities.includes(r)) inp.checked = true;
+      const sp = document.createElement('span'); sp.textContent = r;
+      lab.appendChild(inp); lab.appendChild(sp); rarRow.appendChild(lab);
+    });
+    panel.appendChild(rarRow);
+
+    // actions (apply)
+    const actions = document.createElement('div'); actions.className='checklist-actions';
+    const applyBtn = document.createElement('button'); applyBtn.className='apply-btn'; applyBtn.type='button'; applyBtn.textContent='Apply';
+    applyBtn.addEventListener('click', () => applyChecklistFilters(panel));
+    actions.appendChild(applyBtn);
+    panel.appendChild(actions);
+
+    // insert safely before items container or at end
+    const itemsNode = document.getElementById('itemsContainer'), container = document.querySelector('.container');
+    if(itemsNode && container) container.insertBefore(panel, itemsNode);
+    else if(container) container.appendChild(panel);
+
+    // focus apply for keyboard friendly
+    setTimeout(()=> applyBtn.focus(), 40);
+  }
+
+  function hideChecklist(){
+    const p = document.getElementById('checklistPanel'); if(p) p.remove();
+  }
+
+  function manageChecklistToggle(catKey, opts = { showTitle: false }){
+    const controls = document.querySelector('.controls'); if(!controls) return;
+    let btn = document.getElementById('checklistToggleBtn');
     if(!btn){
-      btn = document.createElement("button");
-      btn.id = "checklistToggleBtn";
-      btn.className = "checklist-toggle nav-btn";
-      btn.type = "button";
-      btn.textContent = "Filters";
+      btn = document.createElement('button'); btn.id='checklistToggleBtn'; btn.className='checklist-toggle'; btn.type='button';
+      btn.textContent = 'Filters';
       btn.addEventListener('click', () => {
-        const panel = document.getElementById("checklistPanel");
-        if(panel) hideChecklist(); else showChecklist(catKey, [], [], { showTitle: false });
+        const panel = document.getElementById('checklistPanel');
+        if(panel) hideChecklist(); else showChecklist(catKey, [], [], opts);
       });
       controls.appendChild(btn);
     }
-    const si = document.getElementById("searchInput");
-    if(!si){ btn.style.display = "none"; return; }
-    btn.style.display = "inline-block";
+    btn.style.marginLeft = '8px';
   }
 
-  // Render items: VISUAL ORDER change here (image -> name -> tags -> rarity). Remove nickname/desc from list.
+  /* ===========================
+     Render items (grid 3 columns)
+     - grid: image box, overlay tags, rarity badge, name below
+     =========================== */
   function renderItems(){
-    const category = localStorage.getItem("activeCategory");
-    if(!category || !DATA[category]) { goHome(); return; }
+    const category = localStorage.getItem('activeCategory');
+    if(!category || !hasData() || !DATA[category]) { goHome(); return; }
     applyCategoryTheme(category);
 
     const data = DATA[category];
-    const title = document.getElementById("categoryTitle");
-    if(title) title.textContent = data.title || category;
+    const title = document.getElementById('categoryTitle'); if(title) title.textContent = data.title || category;
 
-    const logoWrap = document.getElementById("categoryLogoWrap");
+    // small logo
+    const logoWrap = document.getElementById('categoryLogoWrap');
     if(logoWrap){
-      logoWrap.innerHTML = "";
-      const firstItem = (data.items && data.items[0]) ? data.items[0] : null;
-      const logoUrl = (firstItem && firstItem.images && firstItem.images.main) ? firstItem.images.main : FALLBACK;
-      const logoImg = document.createElement('img');
-      logoImg.src = logoUrl;
-      logoImg.alt = `${data.title} logo`;
-      logoImg.className = "category-small-logo";
+      logoWrap.innerHTML = '';
+      const first = (data.items && data.items[0]) ? data.items[0] : null;
+      const logoUrl = (first && first.images && first.images.main) ? first.images.main : FALLBACK;
+      const logoImg = document.createElement('img'); logoImg.src = logoUrl; logoImg.alt = data.title || ''; logoImg.className = 'category-small-logo';
       logoWrap.appendChild(logoImg);
     }
 
-    const searchInput = document.getElementById("searchInput");
-    const search = searchInput ? (searchInput.value || "").toLowerCase() : "";
-    let checkedTags = [];
-    let checkedRarities = [];
+    const searchInput = document.getElementById('searchInput');
+    const search = searchInput ? (searchInput.value || '').toLowerCase() : '';
+    let checkedTags = [], checkedRarities = [];
     if(searchInput && searchInput.dataset.checkedTags){
       try { checkedTags = JSON.parse(searchInput.dataset.checkedTags) || []; } catch(e){ checkedTags = []; }
     }
@@ -292,352 +263,268 @@
       try { checkedRarities = JSON.parse(searchInput.dataset.checkedRarities) || []; } catch(e){ checkedRarities = []; }
     }
 
-    let items = (data.items||[]).filter(it => (it.name||"").toLowerCase().includes(search) || (it.desc||"").toLowerCase().includes(search));
+    let items = (data.items || []).filter(it => {
+      return (it.name||'').toLowerCase().includes(search) || (it.desc||'').toLowerCase().includes(search);
+    });
     if(checkedTags.length > 0) items = items.filter(it => (it.tags||[]).some(t => checkedTags.includes(t)));
     if(checkedRarities.length > 0) items = items.filter(it => checkedRarities.includes(it.rarity));
 
-    const container = document.getElementById("itemsContainer");
+    const container = document.getElementById('itemsContainer');
     if(!container) return;
-    container.innerHTML = "";
-    manageChecklistToggle(category);
+    container.innerHTML = '';
+    // create toggle (hide title on items page for checklist)
+    manageChecklistToggle(category, { showTitle: false });
 
     if(items.length === 0){
-      const card = document.createElement('div');
-      card.className = "card";
-      const p = document.createElement('p');
-      p.className = "empty";
-      p.textContent = "No items match your search.";
-      card.appendChild(p);
-      container.appendChild(card);
-      return;
+      const empty = document.createElement('div'); empty.className = 'card'; empty.innerHTML = '<p class="empty">No items match your search.</p>';
+      container.appendChild(empty); return;
     }
 
     items.forEach(it => {
-      const div = document.createElement("div");
-      div.className = "card item-card small-card item-vertical";
-      div.style.position = "relative";
+      const card = document.createElement('div'); card.className = 'card item-card-grid';
+      // thumb wrap
+      const thumbWrap = document.createElement('div'); thumbWrap.className = 'thumb-wrap';
+      const thumb = (it.images && it.images.main) ? it.images.main : FALLBACK;
+      const img = document.createElement('img'); img.src = thumb; img.alt = it.name || ''; img.className = 'grid-thumb'; img.loading='lazy';
+      thumbWrap.appendChild(img);
 
-      // IMAGE (top)
-      const img = document.createElement('img');
-      img.src = (it.images && it.images.main) ? it.images.main : FALLBACK;
-      img.alt = it.name || "item";
-      img.loading = "lazy";
-      img.className = "item-card-img";
-      div.appendChild(img);
+      // rarity badge
+      const rarityBadge = document.createElement('span'); rarityBadge.className = 'rarity-badge'; rarityBadge.textContent = it.rarity || '';
+      thumbWrap.appendChild(rarityBadge);
 
-      // NAME
-      const h3 = document.createElement('h3');
-      h3.textContent = it.name || "";
-      h3.className = "item-name";
-      div.appendChild(h3);
-
-      // TAGS (small, horizontal, contained)
-      const tagRow = document.createElement('div');
-      tagRow.className = "item-tags-row";
-      (it.tags || []).forEach(t => {
-        const sp = document.createElement('span');
-        sp.className = "item-tag-mini";
-        sp.textContent = t;
-        tagRow.appendChild(sp);
+      // overlay tags (max 3)
+      const overlay = document.createElement('div'); overlay.className = 'img-overlay-tags';
+      (it.tags || []).slice(0,3).forEach(t => {
+        const tagEl = document.createElement('span'); tagEl.className = 'overlay-tag'; tagEl.textContent = t.toUpperCase();
+        overlay.appendChild(tagEl);
       });
-      div.appendChild(tagRow);
+      thumbWrap.appendChild(overlay);
+      card.appendChild(thumbWrap);
 
-      // RARITY (below tags)
-      const rarityWrap = document.createElement('div');
-      rarityWrap.className = "item-rarity-wrap";
-      const raritySpan = document.createElement('span');
-      raritySpan.className = "item-rarity";
-      raritySpan.textContent = it.rarity || "";
-      rarityWrap.appendChild(raritySpan);
-      div.appendChild(rarityWrap);
+      // name below
+      const h = document.createElement('h3'); h.className = 'grid-item-name'; h.textContent = it.name || '';
+      card.appendChild(h);
 
-      // click opens detail
-      div.addEventListener('click', () => {
-        localStorage.setItem("selectedId", it.id);
-        localStorage.setItem("activeCategory", category);
-        window.location.href = "detail.html";
+      // click -> detail
+      card.addEventListener('click', () => {
+        localStorage.setItem('selectedId', it.id);
+        localStorage.setItem('activeCategory', category);
+        window.location.href = 'detail.html';
       });
 
-      container.appendChild(div);
+      container.appendChild(card);
     });
   }
 
-  // ---------- PAGE 3 ----------
-  function ensureDetailOverlay(){
-    let ov = document.getElementById("detailOverlay");
-    if(!ov){ ov = document.createElement("div"); ov.id = "detailOverlay"; document.body.appendChild(ov); }
-    ov.style.position = "fixed"; ov.style.top = "0"; ov.style.left = "0"; ov.style.right = "0"; ov.style.bottom = "0";
-    ov.style.background = "linear-gradient(to bottom, rgba(255,255,255,0.85), rgba(255,255,255,0.95))";
-    ov.style.pointerEvents = "none"; ov.style.zIndex = "1";
-    const c = document.querySelector(".container");
-    if(c){ c.style.position = "relative"; c.style.zIndex = "2"; }
-  }
-
-  // extras slider: circular, nav below images (mobile friendly)
+  /* ===========================
+     PAGE 3: Detail + extras slider (circular)
+     - center opens modal
+     - nav buttons below images for mobile tappability
+     =========================== */
   function createExtrasSlider(extras){
-    const wrap = document.createElement('div');
-    wrap.className = 'extras-slider-wrapper';
-
-    const slider = document.createElement('div');
-    slider.className = 'extras-slider';
-
+    const wrap = document.createElement('div'); wrap.className = 'extras-slider-wrapper';
+    const slider = document.createElement('div'); slider.className = 'extras-slider';
     const arr = [extras[0]||FALLBACK, extras[1]||FALLBACK, extras[2]||FALLBACK];
-    const len = arr.length;
-    let activeIndex = 1;
+    const len = arr.length || 1;
+    let idx = 1 % len;
 
     function render(){
-      slider.innerHTML = "";
-      const prevIndex = (activeIndex - 1 + len) % len;
-      const nextIndex = (activeIndex + 1) % len;
-
-      for(let idx=0; idx<len; idx++){
-        const slot = document.createElement('div');
-        slot.className = 'extras-slide';
-        if(idx === activeIndex) slot.classList.add('active');
-        if(idx === prevIndex || idx === nextIndex) slot.classList.add('side');
-        const im = document.createElement('img');
-        im.src = arr[idx] || FALLBACK;
-        im.alt = `extra-${idx+1}`;
-        im.loading = "lazy";
-        if(idx === activeIndex){
-          im.style.cursor = "pointer";
-          im.addEventListener('click', () => openImageModal(arr[idx] || FALLBACK));
+      slider.innerHTML = '';
+      const prev = (idx - 1 + len) % len;
+      const next = (idx + 1) % len;
+      for(let i=0;i<len;i++){
+        const slot = document.createElement('div'); slot.className = 'extras-slide';
+        if(i === idx) slot.classList.add('active');
+        if(i === prev || i === next) slot.classList.add('side');
+        const im = document.createElement('img'); im.src = arr[i]; im.alt = `extra-${i+1}`; im.loading = 'lazy';
+        if(i === idx){
+          im.style.cursor = 'pointer';
+          im.addEventListener('click', () => openImageModal(arr[i]));
         } else {
-          im.style.cursor = "pointer";
-          im.addEventListener('click', () => { activeIndex = idx; render(); });
+          im.style.cursor = 'pointer';
+          im.addEventListener('click', () => { idx = i; render(); });
         }
-        slot.appendChild(im);
-        slider.appendChild(slot);
+        slot.appendChild(im); slider.appendChild(slot);
       }
     }
 
-    // create nav container below slider (mobile friendly)
-    const navWrap = document.createElement('div');
-    navWrap.className = 'extras-nav-wrap';
+    // nav (below)
+    const navWrap = document.createElement('div'); navWrap.className = 'extras-nav-wrap';
+    const prevBtn = document.createElement('button'); prevBtn.className = 'slider-nav'; prevBtn.type='button'; prevBtn.innerHTML='&#9664;';
+    const nextBtn = document.createElement('button'); nextBtn.className = 'slider-nav'; nextBtn.type='button'; nextBtn.innerHTML='&#9654;';
+    prevBtn.addEventListener('click', () => { idx = (idx - 1 + len) % len; render(); });
+    nextBtn.addEventListener('click', () => { idx = (idx + 1) % len; render(); });
+    navWrap.appendChild(prevBtn); navWrap.appendChild(nextBtn);
 
-    const prevBtn = document.createElement('button');
-    prevBtn.className = 'slider-nav prev-nav';
-    prevBtn.type = 'button';
-    prevBtn.innerHTML = '&#9664;';
-    prevBtn.addEventListener('click', () => { activeIndex = (activeIndex - 1 + len) % len; render(); });
-
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'slider-nav next-nav';
-    nextBtn.type = 'button';
-    nextBtn.innerHTML = '&#9654;';
-    nextBtn.addEventListener('click', () => { activeIndex = (activeIndex + 1) % len; render(); });
-
-    navWrap.appendChild(prevBtn);
-    navWrap.appendChild(nextBtn);
-
-    wrap.appendChild(slider);
-    wrap.appendChild(navWrap);
-
+    wrap.appendChild(slider); wrap.appendChild(navWrap);
     render();
     return wrap;
   }
 
   function renderDetail(){
-    const container = document.getElementById("detailContainer");
-    if(!container) return;
-    const id = localStorage.getItem("selectedId");
-    if(!id){ container.innerHTML = "<div class='card'><h3>Item not found</h3></div>"; return; }
-    const selected = findItemById(id);
-    if(!selected){ container.innerHTML = "<div class='card'><h3>Item not found</h3></div>"; return; }
+    const container = document.getElementById('detailContainer'); if(!container) return;
+    const id = localStorage.getItem('selectedId'); if(!id){ container.innerHTML = "<div class='card'><h3>Item not found</h3></div>"; return; }
+    const selected = findItemById(id); if(!selected){ container.innerHTML = "<div class='card'><h3>Item not found</h3></div>"; return; }
 
-    let category = localStorage.getItem("activeCategory") || findCategoryByItemId(id);
-    if(!category){ Object.keys(DATA).some(k => { if(DATA[k].items.some(it => String(it.id) === String(id))){ category = k; return true;} return false; }); }
+    const category = localStorage.getItem('activeCategory') || null;
     applyCategoryTheme(category);
 
-    const wallpaperUrl = (selected.images && selected.images.main) ? selected.images.main : null;
-    if(wallpaperUrl){
-      document.body.style.backgroundImage = `url("${wallpaperUrl}")`;
-      document.body.style.backgroundSize = "cover";
-      document.body.style.backgroundPosition = "center";
-      document.body.style.backgroundRepeat = "no-repeat";
-      document.body.style.backgroundAttachment = "fixed";
-    } else { applyCategoryTheme(category); }
+    container.innerHTML = '';
+    const wrapper = document.createElement('div'); wrapper.className = 'detail-wrapper';
 
-    ensureDetailOverlay();
-
-    const mainImg = (selected.images && selected.images.main) ? selected.images.main : FALLBACK;
-    const extras = (selected.images && Array.isArray(selected.images.extras)) ? selected.images.extras.slice(0,3) : [];
-
-    container.innerHTML = "";
-    const wrapper = document.createElement('div');
-    wrapper.className = "detail-wrapper";
-
-    const heroCard = document.createElement('div');
-    heroCard.className = "detail-card hero-card";
-
-    const heroImg = document.createElement('img');
-    heroImg.className = "hero-img";
-    heroImg.src = mainImg;
-    heroImg.alt = selected.name || "hero";
+    // hero image
+    const heroCard = document.createElement('div'); heroCard.className = 'detail-card hero-card';
+    const heroImg = document.createElement('img'); heroImg.className = 'hero-img'; heroImg.src = (selected.images && selected.images.main) ? selected.images.main : FALLBACK; heroImg.alt = selected.name || '';
     heroCard.appendChild(heroImg);
 
-    const heroOverlay = document.createElement('div');
-    heroOverlay.className = "hero-overlay";
+    // overlay (title + rarity inline)
+    const heroOverlay = document.createElement('div'); heroOverlay.className = 'hero-overlay';
+    const titleRow = document.createElement('div'); titleRow.className = 'detail-title-row';
+    titleRow.style.display='flex'; titleRow.style.justifyContent='space-between'; titleRow.style.alignItems='center';
 
-    // Title row: name left, rarity right
-    const titleRow = document.createElement('div');
-    titleRow.className = 'detail-title-row';
-    titleRow.style.display = 'flex';
-    titleRow.style.justifyContent = 'space-between';
-    titleRow.style.alignItems = 'center';
-    titleRow.style.gap = '12px';
-
-    const h2 = document.createElement('h2');
-    h2.textContent = selected.name || "";
-    h2.style.margin = 0;
-    h2.style.fontSize = '18px';
+    const h2 = document.createElement('h2'); h2.textContent = selected.name || ''; h2.style.margin='0';
     titleRow.appendChild(h2);
 
-    const rarityRight = document.createElement('div');
-    rarityRight.style.marginLeft = 'auto';
-    const raritySpan = document.createElement('span');
-    raritySpan.className = 'detail-rarity-inline';
-    raritySpan.textContent = selected.rarity || "";
-    raritySpan.style.fontWeight = '900';
-    raritySpan.style.padding = '6px 10px';
-    raritySpan.style.borderRadius = '8px';
-    raritySpan.style.background = 'rgba(0,0,0,0.6)';
-    raritySpan.style.color = '#fff';
-    rarityRight.appendChild(raritySpan);
-    titleRow.appendChild(rarityRight);
+    const raritySpan = document.createElement('span'); raritySpan.className='detail-rarity-inline'; raritySpan.textContent = selected.rarity || '';
+    raritySpan.style.background = 'rgba(0,0,0,0.6)'; raritySpan.style.color='#fff'; raritySpan.style.padding='6px 10px'; raritySpan.style.borderRadius='8px'; raritySpan.style.fontWeight='900';
+    titleRow.appendChild(raritySpan);
 
     heroOverlay.appendChild(titleRow);
 
-    // description
-    const descP = document.createElement('p');
-    descP.className = "hero-desc";
-    descP.textContent = selected.desc || "";
-    heroOverlay.appendChild(descP);
+    const desc = document.createElement('p'); desc.className = 'hero-desc'; desc.textContent = selected.desc || '';
+    heroOverlay.appendChild(desc);
 
-    // tags under title/desc
-    const tagWrap = document.createElement('div');
-    tagWrap.className = "item-tags";
-    (selected.tags||[]).forEach(t => {
-      const sp = document.createElement('span');
-      sp.className = "tag";
-      sp.textContent = String(t).toUpperCase();
-      sp.style.cursor = "pointer";
+    // tags
+    const tagRow = document.createElement('div'); tagRow.className='detail-tag-row';
+    (selected.tags || []).forEach(t => {
+      const sp = document.createElement('span'); sp.className='tag'; sp.textContent = t.toUpperCase();
+      sp.style.cursor = 'pointer';
       sp.addEventListener('click', (ev) => {
         ev.stopPropagation();
         const detailFilter = { tags: [t], rarities: [], category: category, autoApply: true };
-        localStorage.setItem("detailFilter", JSON.stringify(detailFilter));
-        localStorage.setItem("activeCategory", category);
-        window.location.href = "items.html";
+        localStorage.setItem('detailFilter', JSON.stringify(detailFilter));
+        if(category) localStorage.setItem('activeCategory', category);
+        window.location.href = 'items.html';
       });
-      tagWrap.appendChild(sp);
+      tagRow.appendChild(sp);
     });
-    heroOverlay.appendChild(tagWrap);
+    heroOverlay.appendChild(tagRow);
 
     heroCard.appendChild(heroOverlay);
     wrapper.appendChild(heroCard);
 
     if(selected.story && String(selected.story).trim().length > 0){
-      const storyCard = document.createElement('div');
-      storyCard.className = 'story-card';
-      const storyTitle = document.createElement('h3');
-      storyTitle.textContent = 'Story';
-      storyCard.appendChild(storyTitle);
-      const storyText = document.createElement('p');
-      storyText.textContent = selected.story;
-      storyCard.appendChild(storyText);
-      wrapper.appendChild(storyCard);
+      const story = document.createElement('div'); story.className = 'story-card';
+      story.innerHTML = `<h3>Story</h3><p>${selected.story}</p>`;
+      wrapper.appendChild(story);
     }
 
-    // extras slider + nav below
-    const extrasSliderNode = createExtrasSlider(extras);
-    wrapper.appendChild(extrasSliderNode);
+    // extras slider
+    const extras = (selected.images && Array.isArray(selected.images.extras)) ? selected.images.extras.slice(0,3) : [];
+    const sliderNode = createExtrasSlider(extras);
+    wrapper.appendChild(sliderNode);
 
     container.appendChild(wrapper);
   }
 
-  // modal preview
+  /* ===========================
+     Modal open/close helpers (image preview)
+     =========================== */
   function openImageModal(src){
-    const modal = document.getElementById("imgModal");
-    const img = document.getElementById("imgModalImg");
+    const modal = document.getElementById('imgModal'); const img = document.getElementById('imgModalImg');
     if(!modal || !img) return;
     img.src = src || FALLBACK;
-    modal.style.display = "flex";
-    document.addEventListener("keydown", escModalHandler);
+    modal.style.display = 'flex';
+    // focus close button in modal
+    const closeBtn = modal.querySelector('.modal-close');
+    if(closeBtn) closeBtn.focus();
+    document.addEventListener('keydown', escHandler);
   }
-  function closeImageModal(){ const modal = document.getElementById("imgModal"); if(modal) modal.style.display = "none"; document.removeEventListener("keydown", escModalHandler); }
-  function escModalHandler(e){ if(e.key === "Escape") closeImageModal(); }
 
-  document.addEventListener("click", function(e){
-    const modal = document.getElementById("imgModal");
-    if(!modal || modal.style.display !== "flex") return;
-    if(e.target === modal) closeImageModal();
+  function closeImageModal(){
+    const modal = document.getElementById('imgModal');
+    if(modal) modal.style.display = 'none';
+    document.removeEventListener('keydown', escHandler);
+  }
+
+  function escHandler(e){ if(e.key === 'Escape') closeImageModal(); }
+
+  document.addEventListener('click', (e) => {
+    const m = document.getElementById('imgModal');
+    if(!m || m.style.display !== 'flex') return;
+    if(e.target === m) closeImageModal();
   });
 
-  // ---------- INIT ----------
-  document.addEventListener("DOMContentLoaded", function(){
-    const startBtn = document.getElementById("startBtn");
-    const categoryModal = document.getElementById("categoryModal");
-    const modalClose = document.getElementById("modalClose");
-    if(startBtn){ startBtn.addEventListener('click', (e) => { e.preventDefault(); openCategoryModal(); }); }
-    if(modalClose){ modalClose.addEventListener('click', closeCategoryModal); }
+  /* ===========================
+     Init bindings (DOMContentLoaded)
+     =========================== */
+  document.addEventListener('DOMContentLoaded', () => {
+    // START modal bindings
+    const startBtn = document.getElementById('startBtn');
+    const modalClose = document.getElementById('modalClose');
+    const categoryModal = document.getElementById('categoryModal');
 
-    document.addEventListener('keydown', (e) => { if(e.key === "Escape"){ if(categoryModal && !categoryModal.classList.contains('hidden')) closeCategoryModal(); } });
-    if(categoryModal){ categoryModal.addEventListener('click', (ev) => { if(ev.target === categoryModal) closeCategoryModal(); }); }
+    if(startBtn) startBtn.addEventListener('click', (e) => { e.preventDefault(); openCategoryModal(); });
+    if(modalClose) modalClose.addEventListener('click', closeCategoryModal);
+    if(categoryModal) categoryModal.addEventListener('click', (ev) => { if(ev.target === categoryModal) closeCategoryModal(); });
 
-    if(window.location.pathname.includes("items")){
-      const detailFilterRaw = localStorage.getItem("detailFilter");
+    document.addEventListener('keydown', (e) => {
+      if(e.key === 'Escape' && categoryModal && !categoryModal.classList.contains('hidden')) closeCategoryModal();
+    });
+
+    // Items page initialization
+    if(window.location.pathname.includes('items')){
+      // if opened from detail with filters
+      const detailFilterRaw = localStorage.getItem('detailFilter');
       if(detailFilterRaw){
         try {
           const detailFilter = JSON.parse(detailFilterRaw);
-          if(detailFilter && detailFilter.category){
-            localStorage.setItem("activeCategory", detailFilter.category);
-          }
+          if(detailFilter && detailFilter.category) localStorage.setItem('activeCategory', detailFilter.category);
         } catch(e){}
       }
 
-      const si = document.getElementById("searchInput");
-      const activeCategory = localStorage.getItem("activeCategory");
-      if(activeCategory) applyCategoryTheme(activeCategory);
+      const si = document.getElementById('searchInput');
+      const ac = localStorage.getItem('activeCategory');
+      if(ac) applyCategoryTheme(ac);
 
       if(si){
-        si.addEventListener("focus", () => manageChecklistToggle(localStorage.getItem("activeCategory")));
-        si.addEventListener("input", () => renderItems());
-        si.addEventListener("blur", () => setTimeout(()=>manageChecklistToggle(localStorage.getItem("activeCategory")), 150));
+        si.addEventListener('focus', () => manageChecklistToggle(localStorage.getItem('activeCategory'), { showTitle: false }));
+        si.addEventListener('input', () => renderItems());
       }
 
       if(detailFilterRaw){
         try {
           const detailFilter = JSON.parse(detailFilterRaw);
-          const preTags = detailFilter.tags || [];
-          const preRarities = detailFilter.rarities || [];
-          const si2 = document.getElementById("searchInput");
-          if(si2){
-            si2.dataset.checkedTags = JSON.stringify(preTags);
-            si2.dataset.checkedRarities = JSON.stringify(preRarities || []);
-          }
-          setTimeout(() => {
-            showChecklist(localStorage.getItem("activeCategory"), preTags, preRarities, { showTitle: false });
-            if(detailFilter.autoApply){
-              setTimeout(()=> { applyChecklistFilters(); }, 300);
-            }
-          }, 200);
+          const preTags = detailFilter.tags || []; const preRarities = detailFilter.rarities || [];
+          const si2 = document.getElementById('searchInput');
+          if(si2){ si2.dataset.checkedTags = JSON.stringify(preTags); si2.dataset.checkedRarities = JSON.stringify(preRarities || []); }
+          // open checklist (hidden title style)
+          setTimeout(()=>{ showChecklist(localStorage.getItem('activeCategory'), preTags, preRarities, { showTitle: false }); if(detailFilter.autoApply) setTimeout(()=> applyChecklistFilters(document.getElementById('checklistPanel')), 250); }, 200);
         } catch(e){}
-        localStorage.removeItem("detailFilter");
+        localStorage.removeItem('detailFilter');
       }
 
+      // initial render
       renderItems();
     }
 
-    if(window.location.pathname.includes("detail")){
+    // Detail page init
+    if(window.location.pathname.includes('detail')){
       renderDetail();
     }
 
-    const modalCloseBtn = document.getElementById("modalCloseBtn");
-    if(modalCloseBtn) modalCloseBtn.onclick = closeImageModal;
+    // modal image close button
+    const modalCloseBtn = document.getElementById('modalCloseBtn'); if(modalCloseBtn) modalCloseBtn.onclick = closeImageModal;
   });
 
-  // expose modal funcs
-  window.openImageModal = openImageModal;
-  window.closeImageModal = closeImageModal;
+  // expose some internals for debugging (optional)
+  window.__AC = {
+    renderItems,
+    renderDetail,
+    openCategoryModal,
+    closeCategoryModal,
+    showChecklist,
+    hideChecklist
+  };
 
 })();
