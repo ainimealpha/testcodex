@@ -14,8 +14,8 @@
       <h1 class="logo">ANIME CODEX</h1>
     </header>
 
-    <!-- START button (very large and modern) -->
-    <div class="start-wrap" id="startWrap">
+    <!-- START button (very large and modern) - moved slightly lower for better mobile layout -->
+    <div class="start-wrap start-wrap-lowered" id="startWrap">
       <button id="startBtn" class="start-btn start-btn-large" type="button" aria-haspopup="dialog" aria-controls="categoryModal">START</button>
     </div>
 
@@ -26,12 +26,16 @@
     </div>
     <p class="subtitle subtitle-centered">Tap a card to open the category</p>
 
+    <!-- small extra help text under subtitle -->
+    <p class="subtitle-small subtitle-centered">Find your path — choose a category and begin the adventure.</p>
+
     <!-- START modal: ONLY category grid (NO tags / NO rarity here) -->
     <div id="categoryModal" class="category-modal hidden" role="dialog" aria-modal="true" aria-labelledby="categoryModalTitle">
       <div class="category-modal-content" role="document">
         <div class="modal-header">
           <h2 id="categoryModalTitle">Choose a Category</h2>
-          <button id="modalClose" class="nav-btn" aria-label="Close categories">✕</button>
+          <!-- modern close button -->
+          <button id="modalClose" class="modal-close-btn" aria-label="Close categories">✕</button>
         </div>
 
         <!-- category grid only -->
