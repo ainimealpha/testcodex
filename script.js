@@ -1,7 +1,9 @@
-// script.js - Revisi final: safeguard DATA checks, opsi showTitle untuk checklist,
-// restore applyChecklistFilters helper, perbaikan fokus modal, slider lebih stabil.
-// Mobile-first behavior preserved.
-// Pastikan data.js ter-load dan mendefinisikan DATA (object) & optional PLACEHOLDER.
+// script.js - Revisi final (mobile-first)
+// Fitur utama:
+// - Page1: kategori modal grid 3 kolom
+// - Page2: items grid (3 kolom); overlay tags HIDDEN by default; muncul jika user APPLY filter
+// - Page3: detail + extras slider (circular); Back di pojok kanan atas
+// - Safeguards ketika DATA tidak tersedia
 
 (function(){
   'use strict';
@@ -13,12 +15,11 @@
     ? PLACEHOLDER
     : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'%3E%3Crect width='100%25' height='100%25' fill='%23ffe9a8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23333333' font-family='Arial' font-size='24'%3ENo Image%3C/text%3E%3C/svg%3E";
 
-  // Small helper: safe access to DATA
   function hasData(){
     return (typeof DATA !== 'undefined') && (DATA && typeof DATA === 'object');
   }
 
-  // Navigation helpers (exposed for inline onclick)
+  // Navigation helpers (exposed globally for inline onclick)
   function goHome(){ window.location.href = "index.html"; }
   function goBackToHome(){ window.location.href = "index.html"; }
   function goToItemsPage(){ window.location.href = "items.html"; }
@@ -28,7 +29,7 @@
   window.goToItemsPage = goToItemsPage;
 
   /* ===========================
-     Theme / UI helpers
+     Theme constants
      =========================== */
   const CATEGORY_THEME = {
     CHARACTER: { tagBg: "#ffd6da", accent: "#ff6b6b", bg: "linear-gradient(180deg,#ffe6e8,#ffd6da)" },
@@ -62,7 +63,7 @@
   }
 
   /* ===========================
-     PAGE 1: Category modal (3-col grid)
+     Page 1: category modal (3 columns)
      =========================== */
   function buildCategoryCardForModal(key){
     const cat = (hasData() && DATA[key]) ? DATA[key] : { title: key, items: [] };
@@ -100,14 +101,12 @@
     const grid = document.getElementById('categoryGrid'); if(!grid) return;
     grid.innerHTML = "";
     if(!hasData()){
-      // graceful fallback
-      const info = document.createElement('div'); info.textContent = "No categories available."; grid.appendChild(info); 
+      const info = document.createElement('div'); info.textContent = "No categories available."; grid.appendChild(info);
     } else {
       Object.keys(DATA).forEach(k => grid.appendChild(buildCategoryCardForModal(k)));
     }
     modal.classList.remove('hidden');
-    // focus trap light: focus first card
-    setTimeout(()=>{ const first = modal.querySelector('.modal-cat-card'); if(first) first.focus(); },40);
+    setTimeout(()=>{ const first = modal.querySelector('.modal-cat-card'); if(first) first.focus(); }, 40);
     document.body.style.overflow = 'hidden';
   }
 
@@ -115,15 +114,15 @@
     const modal = document.getElementById('categoryModal'); if(!modal) return;
     modal.classList.add('hidden');
     document.body.style.overflow = '';
-    // restore focus to start button if present
     const startBtn = document.getElementById('startBtn'); if(startBtn) startBtn.focus();
   }
 
   /* ===========================
-     PAGE 2: Checklist (filters) + render items (3-column grid)
-     - showChecklist has option showTitle (default true)
-     - applyChecklistFilters helper (reusable)
+     Page 2: checklist & render items
+     - tags overlay on image appears ONLY if filters active (user applied)
+     - modern filter layout, spacing
      =========================== */
+
   function uniqueTagsForCategory(catKey){
     if(!hasData() || !DATA[catKey]) return [];
     const s = new Set();
@@ -131,31 +130,36 @@
     return Array.from(s);
   }
 
-  // Apply handler extracted for clarity
+  // applyChecklistFilters: used by showChecklist apply button (panel passed in)
   function applyChecklistFilters(panel){
     if(!panel) return;
-    const all = panel.querySelectorAll('.chip input');
+    const inputs = panel.querySelectorAll('.chip input');
     const tagsChecked = [], rarChecked = [];
-    all.forEach(i => {
-      if(i.checked){
-        if(['S','A','B','C','D'].includes(i.value)) rarChecked.push(i.value);
-        else tagsChecked.push(i.value);
-      }
-    });
+    inputs.forEach(i => { if(i.checked){ if(['S','A','B','C','D'].includes(i.value)) rarChecked.push(i.value); else tagsChecked.push(i.value); }});
+
     const si = document.getElementById('searchInput');
     if(si){
       si.dataset.checkedTags = JSON.stringify(tagsChecked);
       si.dataset.checkedRarities = JSON.stringify(rarChecked);
     }
+
+    // toggle overlay visibility on items grid
+    const container = document.getElementById('itemsContainer');
+    if(container){
+      if(tagsChecked.length > 0 || rarChecked.length > 0) container.classList.add('filters-active');
+      else container.classList.remove('filters-active');
+    }
+
     hideChecklist();
     renderItems();
   }
 
+  // showChecklist with option showTitle (default true)
   function showChecklist(catKey, preTags = [], preRarities = [], options = { showTitle: true }){
     hideChecklist();
     const panel = document.createElement('div'); panel.id = 'checklistPanel'; panel.className = 'checklist-panel';
 
-    // header (title optional + modern close)
+    // header
     const header = document.createElement('div'); header.className = 'checklist-header';
     if(options.showTitle){
       const title = document.createElement('div'); title.className = 'checklist-title'; title.textContent = 'Filter tags & rarity';
@@ -171,8 +175,9 @@
     panel.appendChild(tagLbl);
     const tagRow = document.createElement('div'); tagRow.className='checklist-chips';
     const tags = uniqueTagsForCategory(catKey);
-    if(tags.length === 0){ const none = document.createElement('div'); none.className='checklist-empty'; none.textContent='No tags'; tagRow.appendChild(none); }
-    else {
+    if(tags.length === 0){
+      const none = document.createElement('div'); none.className='checklist-empty'; none.textContent='No tags'; tagRow.appendChild(none);
+    } else {
       tags.forEach(t => {
         const lab = document.createElement('label'); lab.className='chip';
         const inp = document.createElement('input'); inp.type='checkbox'; inp.value = t;
@@ -196,25 +201,22 @@
     });
     panel.appendChild(rarRow);
 
-    // actions (apply)
+    // actions
     const actions = document.createElement('div'); actions.className='checklist-actions';
     const applyBtn = document.createElement('button'); applyBtn.className='apply-btn'; applyBtn.type='button'; applyBtn.textContent='Apply';
     applyBtn.addEventListener('click', () => applyChecklistFilters(panel));
     actions.appendChild(applyBtn);
     panel.appendChild(actions);
 
-    // insert safely before items container or at end
+    // insert
     const itemsNode = document.getElementById('itemsContainer'), container = document.querySelector('.container');
     if(itemsNode && container) container.insertBefore(panel, itemsNode);
     else if(container) container.appendChild(panel);
 
-    // focus apply for keyboard friendly
     setTimeout(()=> applyBtn.focus(), 40);
   }
 
-  function hideChecklist(){
-    const p = document.getElementById('checklistPanel'); if(p) p.remove();
-  }
+  function hideChecklist(){ const p = document.getElementById('checklistPanel'); if(p) p.remove(); }
 
   function manageChecklistToggle(catKey, opts = { showTitle: false }){
     const controls = document.querySelector('.controls'); if(!controls) return;
@@ -232,8 +234,8 @@
   }
 
   /* ===========================
-     Render items (grid 3 columns)
-     - grid: image box, overlay tags, rarity badge, name below
+     Render items (3-col grid)
+     - overlay tags appear only when itemsContainer has class 'filters-active'
      =========================== */
   function renderItems(){
     const category = localStorage.getItem('activeCategory');
@@ -243,7 +245,7 @@
     const data = DATA[category];
     const title = document.getElementById('categoryTitle'); if(title) title.textContent = data.title || category;
 
-    // small logo
+    // logo
     const logoWrap = document.getElementById('categoryLogoWrap');
     if(logoWrap){
       logoWrap.innerHTML = '';
@@ -253,6 +255,7 @@
       logoWrap.appendChild(logoImg);
     }
 
+    // determine filters
     const searchInput = document.getElementById('searchInput');
     const search = searchInput ? (searchInput.value || '').toLowerCase() : '';
     let checkedTags = [], checkedRarities = [];
@@ -263,6 +266,8 @@
       try { checkedRarities = JSON.parse(searchInput.dataset.checkedRarities) || []; } catch(e){ checkedRarities = []; }
     }
 
+    const filtersActive = (checkedTags.length > 0 || checkedRarities.length > 0);
+
     let items = (data.items || []).filter(it => {
       return (it.name||'').toLowerCase().includes(search) || (it.desc||'').toLowerCase().includes(search);
     });
@@ -272,7 +277,10 @@
     const container = document.getElementById('itemsContainer');
     if(!container) return;
     container.innerHTML = '';
-    // create toggle (hide title on items page for checklist)
+
+    // toggle class for overlay visibility
+    if(filtersActive) container.classList.add('filters-active'); else container.classList.remove('filters-active');
+
     manageChecklistToggle(category, { showTitle: false });
 
     if(items.length === 0){
@@ -282,23 +290,27 @@
 
     items.forEach(it => {
       const card = document.createElement('div'); card.className = 'card item-card-grid';
+
       // thumb wrap
       const thumbWrap = document.createElement('div'); thumbWrap.className = 'thumb-wrap';
       const thumb = (it.images && it.images.main) ? it.images.main : FALLBACK;
       const img = document.createElement('img'); img.src = thumb; img.alt = it.name || ''; img.className = 'grid-thumb'; img.loading='lazy';
       thumbWrap.appendChild(img);
 
-      // rarity badge
+      // rarity badge (always visible on corner)
       const rarityBadge = document.createElement('span'); rarityBadge.className = 'rarity-badge'; rarityBadge.textContent = it.rarity || '';
       thumbWrap.appendChild(rarityBadge);
 
-      // overlay tags (max 3)
-      const overlay = document.createElement('div'); overlay.className = 'img-overlay-tags';
-      (it.tags || []).slice(0,3).forEach(t => {
-        const tagEl = document.createElement('span'); tagEl.className = 'overlay-tag'; tagEl.textContent = t.toUpperCase();
-        overlay.appendChild(tagEl);
-      });
-      thumbWrap.appendChild(overlay);
+      // overlay tags: only add DOM if filtersActive, to keep markup minimal
+      if(container.classList.contains('filters-active')){
+        const overlay = document.createElement('div'); overlay.className = 'img-overlay-tags';
+        (it.tags || []).slice(0,3).forEach(t => {
+          const tagEl = document.createElement('span'); tagEl.className = 'overlay-tag'; tagEl.textContent = t.toUpperCase();
+          overlay.appendChild(tagEl);
+        });
+        thumbWrap.appendChild(overlay);
+      }
+
       card.appendChild(thumbWrap);
 
       // name below
@@ -317,9 +329,7 @@
   }
 
   /* ===========================
-     PAGE 3: Detail + extras slider (circular)
-     - center opens modal
-     - nav buttons below images for mobile tappability
+     Page 3: detail + extras slider
      =========================== */
   function createExtrasSlider(extras){
     const wrap = document.createElement('div'); wrap.className = 'extras-slider-wrapper';
@@ -336,7 +346,7 @@
         const slot = document.createElement('div'); slot.className = 'extras-slide';
         if(i === idx) slot.classList.add('active');
         if(i === prev || i === next) slot.classList.add('side');
-        const im = document.createElement('img'); im.src = arr[i]; im.alt = `extra-${i+1}`; im.loading = 'lazy';
+        const im = document.createElement('img'); im.src = arr[i]; im.alt = `extra-${i+1}`; im.loading='lazy';
         if(i === idx){
           im.style.cursor = 'pointer';
           im.addEventListener('click', () => openImageModal(arr[i]));
@@ -348,7 +358,6 @@
       }
     }
 
-    // nav (below)
     const navWrap = document.createElement('div'); navWrap.className = 'extras-nav-wrap';
     const prevBtn = document.createElement('button'); prevBtn.className = 'slider-nav'; prevBtn.type='button'; prevBtn.innerHTML='&#9664;';
     const nextBtn = document.createElement('button'); nextBtn.className = 'slider-nav'; nextBtn.type='button'; nextBtn.innerHTML='&#9654;';
@@ -372,27 +381,22 @@
     container.innerHTML = '';
     const wrapper = document.createElement('div'); wrapper.className = 'detail-wrapper';
 
-    // hero image
+    // hero
     const heroCard = document.createElement('div'); heroCard.className = 'detail-card hero-card';
     const heroImg = document.createElement('img'); heroImg.className = 'hero-img'; heroImg.src = (selected.images && selected.images.main) ? selected.images.main : FALLBACK; heroImg.alt = selected.name || '';
     heroCard.appendChild(heroImg);
 
-    // overlay (title + rarity inline)
     const heroOverlay = document.createElement('div'); heroOverlay.className = 'hero-overlay';
     const titleRow = document.createElement('div'); titleRow.className = 'detail-title-row';
     titleRow.style.display='flex'; titleRow.style.justifyContent='space-between'; titleRow.style.alignItems='center';
-
     const h2 = document.createElement('h2'); h2.textContent = selected.name || ''; h2.style.margin='0';
     titleRow.appendChild(h2);
-
     const raritySpan = document.createElement('span'); raritySpan.className='detail-rarity-inline'; raritySpan.textContent = selected.rarity || '';
     raritySpan.style.background = 'rgba(0,0,0,0.6)'; raritySpan.style.color='#fff'; raritySpan.style.padding='6px 10px'; raritySpan.style.borderRadius='8px'; raritySpan.style.fontWeight='900';
     titleRow.appendChild(raritySpan);
-
     heroOverlay.appendChild(titleRow);
 
-    const desc = document.createElement('p'); desc.className = 'hero-desc'; desc.textContent = selected.desc || '';
-    heroOverlay.appendChild(desc);
+    const desc = document.createElement('p'); desc.className='hero-desc'; desc.textContent = selected.desc || ''; heroOverlay.appendChild(desc);
 
     // tags
     const tagRow = document.createElement('div'); tagRow.className='detail-tag-row';
@@ -428,14 +432,13 @@
   }
 
   /* ===========================
-     Modal open/close helpers (image preview)
+     Modal helpers: image preview
      =========================== */
   function openImageModal(src){
     const modal = document.getElementById('imgModal'); const img = document.getElementById('imgModalImg');
     if(!modal || !img) return;
     img.src = src || FALLBACK;
     modal.style.display = 'flex';
-    // focus close button in modal
     const closeBtn = modal.querySelector('.modal-close');
     if(closeBtn) closeBtn.focus();
     document.addEventListener('keydown', escHandler);
@@ -446,7 +449,6 @@
     if(modal) modal.style.display = 'none';
     document.removeEventListener('keydown', escHandler);
   }
-
   function escHandler(e){ if(e.key === 'Escape') closeImageModal(); }
 
   document.addEventListener('click', (e) => {
@@ -456,10 +458,9 @@
   });
 
   /* ===========================
-     Init bindings (DOMContentLoaded)
+     Init bindings
      =========================== */
   document.addEventListener('DOMContentLoaded', () => {
-    // START modal bindings
     const startBtn = document.getElementById('startBtn');
     const modalClose = document.getElementById('modalClose');
     const categoryModal = document.getElementById('categoryModal');
@@ -467,14 +468,10 @@
     if(startBtn) startBtn.addEventListener('click', (e) => { e.preventDefault(); openCategoryModal(); });
     if(modalClose) modalClose.addEventListener('click', closeCategoryModal);
     if(categoryModal) categoryModal.addEventListener('click', (ev) => { if(ev.target === categoryModal) closeCategoryModal(); });
+    document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && categoryModal && !categoryModal.classList.contains('hidden')) closeCategoryModal(); });
 
-    document.addEventListener('keydown', (e) => {
-      if(e.key === 'Escape' && categoryModal && !categoryModal.classList.contains('hidden')) closeCategoryModal();
-    });
-
-    // Items page initialization
+    // items page
     if(window.location.pathname.includes('items')){
-      // if opened from detail with filters
       const detailFilterRaw = localStorage.getItem('detailFilter');
       if(detailFilterRaw){
         try {
@@ -498,33 +495,23 @@
           const preTags = detailFilter.tags || []; const preRarities = detailFilter.rarities || [];
           const si2 = document.getElementById('searchInput');
           if(si2){ si2.dataset.checkedTags = JSON.stringify(preTags); si2.dataset.checkedRarities = JSON.stringify(preRarities || []); }
-          // open checklist (hidden title style)
           setTimeout(()=>{ showChecklist(localStorage.getItem('activeCategory'), preTags, preRarities, { showTitle: false }); if(detailFilter.autoApply) setTimeout(()=> applyChecklistFilters(document.getElementById('checklistPanel')), 250); }, 200);
         } catch(e){}
         localStorage.removeItem('detailFilter');
       }
 
-      // initial render
       renderItems();
     }
 
-    // Detail page init
+    // detail page
     if(window.location.pathname.includes('detail')){
       renderDetail();
     }
 
-    // modal image close button
     const modalCloseBtn = document.getElementById('modalCloseBtn'); if(modalCloseBtn) modalCloseBtn.onclick = closeImageModal;
   });
 
-  // expose some internals for debugging (optional)
-  window.__AC = {
-    renderItems,
-    renderDetail,
-    openCategoryModal,
-    closeCategoryModal,
-    showChecklist,
-    hideChecklist
-  };
+  // Expose helpers for quick debugging (optional)
+  window.__AC = { renderItems, renderDetail, openCategoryModal, closeCategoryModal, showChecklist, hideChecklist };
 
 })();
