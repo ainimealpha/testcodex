@@ -8,19 +8,19 @@
   <script src="data.js"></script>
   <script src="script.js" defer></script>
 </head>
-<body>
+<body class="home-page">
   <main class="container">
     <header class="header header-centered">
       <h1 class="logo">ANIME CODEX</h1>
     </header>
 
-    <!-- START button (very large and modern) - lowered further per request -->
+    <!-- START button (very large and modern) - centered vertically via .home-page -->
     <div class="start-wrap start-wrap-lowered" id="startWrap">
       <button id="startBtn" class="start-btn start-btn-large" type="button" aria-haspopup="dialog" aria-controls="categoryModal">START</button>
     </div>
 
-    <!-- season text & subtitle: BELOW START -->
-    <div class="hero-text hero-text-below">
+    <!-- season text & subtitle: centered in middle of page -->
+    <div class="hero-text hero-text-below hero-center">
       <div class="season-line">SEASON 1 - Adventure Begins</div>
       <div class="arc-line">Adventure Arc</div>
     </div>
@@ -28,7 +28,7 @@
     <!-- small extra help text under subtitle -->
     <p class="subtitle-small subtitle-centered">Choose a path — pick a category and dive in.</p>
 
-    <!-- START modal: ONLY category grid (NO tags / NO rarity here). Grid 3 columns, no need scroll. -->
+    <!-- START modal: ONLY category grid (NO tags / NO rarity here). Grid 3 columns -->
     <div id="categoryModal" class="category-modal hidden" role="dialog" aria-modal="true" aria-labelledby="categoryModalTitle">
       <div class="category-modal-content" role="document">
         <div class="modal-header">
