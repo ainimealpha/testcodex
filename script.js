@@ -1,4 +1,4 @@
-// script.js - REVISED: rarity filter always shows S-A-B-C-D, modern back handling (items/detail), and UI glue.
+// script.js - UPDATED: start modal filter-like; checklist options; items/detail fixes (extras slider + center popup)
 // Assumes data.js defines DATA and PLACEHOLDER
 (function(){
   'use strict';
@@ -11,14 +11,8 @@
   // Navigation helpers
   function goHome(){ window.location.href = "index.html"; }
   function goBackToHome(){ window.location.href = "index.html"; }
-  function goToItemsPage(){ 
-    // ensure activeCategory remains set; then go to items page
-    const cat = localStorage.getItem("activeCategory") || '';
-    // nothing complicated: just navigate
-    window.location.href = "items.html";
-  }
+  function goToItemsPage(){ window.location.href = "items.html"; }
 
-  // expose to global
   window.goBackToHome = goBackToHome;
   window.goToItemsPage = goToItemsPage;
 
@@ -39,7 +33,7 @@
     document.documentElement.style.setProperty('--accent-color', theme.accent);
   }
 
-  // find item by id across DATA
+  // helpers
   function findItemById(id){
     let found = null;
     Object.keys(DATA).some(catKey => {
@@ -50,7 +44,6 @@
     });
     return found;
   }
-
   function findCategoryByItemId(id){
     let foundKey = null;
     Object.keys(DATA).some(catKey => {
@@ -60,26 +53,33 @@
     return foundKey;
   }
 
-  // ------------------------
-  // PAGE 1 - category modal triggered by START (kept as before)
-  // ------------------------
-  function buildCategoryCard(key){
+  // -------------------------
+  // Page1: START modal with filter-like chips
+  // -------------------------
+  function aggregateAllTags(){
+    const s = new Set();
+    Object.keys(DATA).forEach(k => {
+      (DATA[k].items||[]).forEach(it => (it.tags||[]).forEach(t=>s.add(t)));
+    });
+    return Array.from(s);
+  }
+  function buildCategoryCardForModal(key){
     const cat = DATA[key];
     const firstItem = (cat && cat.items && cat.items[0]) ? cat.items[0] : null;
     const thumb = (firstItem && firstItem.images && firstItem.images.main) ? firstItem.images.main : FALLBACK;
-
     const card = document.createElement('div');
     card.className = "card cat-card";
     card.tabIndex = 0;
 
-    const imgWrap = document.createElement('div');
-    imgWrap.className = "card-imgwrap";
     const img = document.createElement('img');
     img.src = thumb;
     img.alt = `${cat.title || key} preview`;
     img.loading = "lazy";
-    imgWrap.appendChild(img);
-    card.appendChild(imgWrap);
+    img.style.borderRadius = "10px";
+    img.style.width = "100%";
+    img.style.height = "120px";
+    img.style.objectFit = "cover";
+    card.appendChild(img);
 
     const h3 = document.createElement('h3');
     h3.textContent = cat.title || key;
@@ -87,61 +87,121 @@
 
     card.addEventListener('click', () => {
       localStorage.setItem("activeCategory", key);
-      // close then navigate
       closeCategoryModal();
       window.location.href = "items.html";
     });
-    card.addEventListener('keypress', (e) => { if(e.key === "Enter") card.click(); });
-
     return card;
   }
 
   function openCategoryModal(){
     const modal = document.getElementById('categoryModal');
     if(!modal) return;
+    // populate tags & rarity chips for modal filters
+    const allTags = aggregateAllTags().sort();
+    const tagsWrap = document.getElementById('modalTagChips');
+    const rarityWrap = document.getElementById('modalRarityChips');
+    if(tagsWrap){
+      tagsWrap.innerHTML = "";
+      allTags.forEach(t => {
+        const label = document.createElement('label');
+        label.className = 'chip';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.value = t;
+        input.addEventListener('change', filterCategoriesInModal);
+        const span = document.createElement('span');
+        span.textContent = t;
+        label.appendChild(input);
+        label.appendChild(span);
+        tagsWrap.appendChild(label);
+      });
+    }
+    if(rarityWrap){
+      rarityWrap.innerHTML = "";
+      const order = ["S","A","B","C","D"];
+      order.forEach(r => {
+        const lab = document.createElement('label');
+        lab.className = 'chip rarity-chip';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.value = r;
+        input.addEventListener('change', filterCategoriesInModal);
+        const span = document.createElement('span');
+        span.textContent = r;
+        lab.appendChild(input);
+        lab.appendChild(span);
+        rarityWrap.appendChild(lab);
+      });
+    }
+    // populate category grid (all initially)
     const grid = document.getElementById('categoryGrid');
     if(grid){
       grid.innerHTML = "";
       Object.keys(DATA).forEach(key => {
-        const card = buildCategoryCard(key);
-        grid.appendChild(card);
+        const c = buildCategoryCardForModal(key);
+        grid.appendChild(c);
       });
     }
+
     modal.classList.remove('hidden');
-    document.body.style.overflow = "hidden";
-    setTimeout(() => {
+    document.body.style.overflow = 'hidden';
+    setTimeout(()=> {
       const first = modal.querySelector('.card');
       if(first) first.focus();
     },50);
   }
+
   function closeCategoryModal(){
     const modal = document.getElementById('categoryModal');
     if(!modal) return;
     modal.classList.add('hidden');
-    document.body.style.overflow = "";
-    const startBtn = document.getElementById('startBtn');
-    if(startBtn) startBtn.focus();
+    document.body.style.overflow = '';
   }
 
-  // ------------------------
-  // PAGE 2 - items + filters
-  // ------------------------
+  // filters categories based on checked chips (modal)
+  function filterCategoriesInModal(){
+    const grid = document.getElementById('categoryGrid');
+    if(!grid) return;
+    const selectedTags = Array.from(document.querySelectorAll('#modalTagChips input:checked')).map(i => i.value);
+    const selectedRarities = Array.from(document.querySelectorAll('#modalRarityChips input:checked')).map(i => i.value);
+
+    grid.innerHTML = "";
+    Object.keys(DATA).forEach(key => {
+      const items = DATA[key].items || [];
+      let ok = true;
+      if(selectedTags.length > 0){
+        ok = items.some(it => (it.tags||[]).some(t => selectedTags.includes(t)));
+      }
+      if(ok && selectedRarities.length > 0){
+        ok = items.some(it => selectedRarities.includes(it.rarity));
+      }
+      if(ok){
+        grid.appendChild(buildCategoryCardForModal(key));
+      }
+    });
+    // if empty, show all categories as fallback (helps UX)
+    if(grid.childElementCount === 0){
+      grid.innerHTML = "";
+      Object.keys(DATA).forEach(key => grid.appendChild(buildCategoryCardForModal(key)));
+    }
+  }
+
+  // -------------------------
+  // Page2: checklist with option to hide title (we remove "Filter tags & rarity" text)
+  // -------------------------
   function uniqueTagsForCategory(catKey){
     if(!DATA[catKey]) return [];
     const s = new Set();
     DATA[catKey].items.forEach(it => (it.tags||[]).forEach(t => s.add(t)));
     return Array.from(s);
   }
-
-  // NOTE: changed — always return full order so filters S..D always shown
+  // always return full S..D order for display
   function uniqueRaritiesForCategory(catKey){
-    const order = ["S","A","B","C","D"];
-    // Always return full order (UI will show all)
-    return order.slice();
+    return ["S","A","B","C","D"];
   }
 
-  // checklist: accepts preSelected arrays
-  function showChecklist(catKey, preSelectedTags = [], preSelectedRarities = []){
+  // showChecklist signature updated: (catKey, preTags=[], preRarities=[], options={showTitle:true})
+  function showChecklist(catKey, preSelectedTags = [], preSelectedRarities = [], options = { showTitle: true }){
     hideChecklist();
     const panel = document.createElement('div');
     panel.id = "checklistPanel";
@@ -149,9 +209,12 @@
 
     const header = document.createElement('div');
     header.className = "checklist-header";
-    const title = document.createElement('strong');
-    title.textContent = "Filter tags & rarity";
-    header.appendChild(title);
+    // only show close button (title removed for page2 when options.showTitle===false)
+    if(options.showTitle){
+      const title = document.createElement('strong');
+      title.textContent = "Filter tags & rarity";
+      header.appendChild(title);
+    }
     const closeBtn = document.createElement('button');
     closeBtn.className = "closeChecklist";
     closeBtn.type = "button";
@@ -194,7 +257,7 @@
     tagsSection.appendChild(chips);
     panel.appendChild(tagsSection);
 
-    // RARITY - ALWAYS show S..D (modern style)
+    // RARITY - ALWAYS show S..D
     const raritySection = document.createElement('div');
     raritySection.className = "checklist-section";
     const rarityLabel = document.createElement('div');
@@ -203,7 +266,7 @@
     raritySection.appendChild(rarityLabel);
 
     const rarityChips = document.createElement('div');
-    rarityChips.className = "checklist-chips";
+    rarityChips.className = "checklist-chips rarity-chips-row";
     const order = ["S","A","B","C","D"];
     order.forEach(r => {
       const rx = document.createElement('label');
@@ -278,7 +341,7 @@
       btn.textContent = "Filters";
       btn.addEventListener('click', () => {
         const panel = document.getElementById("checklistPanel");
-        if(panel) hideChecklist(); else showChecklist(catKey);
+        if(panel) hideChecklist(); else showChecklist(catKey, [], [], { showTitle: false }); // hide title in page2
       });
       controls.appendChild(btn);
     }
@@ -399,9 +462,9 @@
     });
   }
 
-  // ------------------------
-  // PAGE 3 - detail view (tags clickable -> open items with filter)
-  // ------------------------
+  // -------------------------
+  // Page3 - detail with extras slider (center big + only center pop-up)
+  // -------------------------
   function ensureDetailOverlay(){
     let ov = document.getElementById("detailOverlay");
     if(!ov){
@@ -421,6 +484,72 @@
     if(c){ c.style.position = "relative"; c.style.zIndex = "2"; }
   }
 
+  // create extras slider: extras is array (0..2)
+  function createExtrasSlider(extras){
+    // wrapper
+    const wrap = document.createElement('div');
+    wrap.className = 'extras-slider-wrapper';
+
+    // slider container
+    const slider = document.createElement('div');
+    slider.className = 'extras-slider';
+    // ensure we have 3 slots; fill with FALLBACK if missing
+    const arr = [extras[0]||FALLBACK, extras[1]||FALLBACK, extras[2]||FALLBACK];
+    let activeIndex = 1; // center by default
+
+    function render(){
+      slider.innerHTML = "";
+      arr.forEach((src, idx) => {
+        const slot = document.createElement('div');
+        slot.className = 'extras-slide';
+        if(idx === activeIndex) slot.classList.add('active');
+        if(idx === activeIndex-1 || idx === activeIndex+1) slot.classList.add('side');
+        const im = document.createElement('img');
+        im.src = src || FALLBACK;
+        im.alt = `extra-${idx+1}`;
+        im.loading = "lazy";
+        // only center image opens modal
+        if(idx === activeIndex){
+          im.style.cursor = "pointer";
+          im.addEventListener('click', () => openImageModal(src || FALLBACK));
+        } else {
+          im.style.cursor = "default";
+          im.addEventListener('click', () => {
+            // clicking side images will move them to center
+            activeIndex = idx;
+            render();
+          });
+        }
+        slot.appendChild(im);
+        slider.appendChild(slot);
+      });
+    }
+
+    // prev/next controls
+    const prev = document.createElement('button');
+    prev.className = 'slider-nav prev-nav';
+    prev.type = 'button';
+    prev.innerHTML = '&#9664;';
+    prev.addEventListener('click', () => {
+      activeIndex = Math.max(0, activeIndex-1);
+      render();
+    });
+    const next = document.createElement('button');
+    next.className = 'slider-nav next-nav';
+    next.type = 'button';
+    next.innerHTML = '&#9654;';
+    next.addEventListener('click', () => {
+      activeIndex = Math.min(arr.length-1, activeIndex+1);
+      render();
+    });
+
+    wrap.appendChild(prev);
+    wrap.appendChild(slider);
+    wrap.appendChild(next);
+    render();
+    return wrap;
+  }
+
   function renderDetail(){
     const container = document.getElementById("detailContainer");
     if(!container) return;
@@ -429,7 +558,7 @@
     const selected = findItemById(id);
     if(!selected){ container.innerHTML = "<div class='card'><h3>Item not found</h3></div>"; return; }
 
-    // determine category
+    // find category
     let category = localStorage.getItem("activeCategory") || findCategoryByItemId(id);
     if(!category){
       Object.keys(DATA).some(k => {
@@ -454,7 +583,6 @@
 
     const mainImg = (selected.images && selected.images.main) ? selected.images.main : FALLBACK;
     const extras = (selected.images && Array.isArray(selected.images.extras)) ? selected.images.extras.slice(0,3) : [];
-    const tags = (selected.tags || []).slice(0,10);
 
     container.innerHTML = "";
     const wrapper = document.createElement('div');
@@ -483,7 +611,7 @@
 
     const tagWrap = document.createElement('div');
     tagWrap.className = "item-tags";
-    tags.forEach(t => {
+    (selected.tags||[]).forEach(t => {
       const sp = document.createElement('span');
       sp.className = "tag";
       sp.textContent = String(t).toUpperCase();
@@ -521,24 +649,14 @@
       wrapper.appendChild(storyCard);
     }
 
-    const extrasWrap = document.createElement('div');
-    extrasWrap.className = "extras";
-    extras.forEach((src, idx) => {
-      const ex = document.createElement('div');
-      ex.className = "extra-thumb";
-      const im = document.createElement('img');
-      im.src = src || FALLBACK;
-      im.alt = `extra ${idx+1}`;
-      im.addEventListener('click', () => openImageModal(src || FALLBACK));
-      ex.appendChild(im);
-      extrasWrap.appendChild(ex);
-    });
-    wrapper.appendChild(extrasWrap);
+    // extras slider (horizontal with center big)
+    const extrasSliderNode = createExtrasSlider(extras);
+    wrapper.appendChild(extrasSliderNode);
 
     container.appendChild(wrapper);
   }
 
-  // image modal
+  // modal preview
   function openImageModal(src){
     const modal = document.getElementById("imgModal");
     const img = document.getElementById("imgModalImg");
@@ -562,11 +680,11 @@
     if(e.target === modal) closeImageModal();
   });
 
-  // ------------------------
-  // Init DOMContentLoaded
-  // ------------------------
+  // -------------------------
+  // Init bindings
+  // -------------------------
   document.addEventListener("DOMContentLoaded", function(){
-    // INDEX page: bind START robustly if present
+    // INDEX page: START button binding
     const startBtn = document.getElementById("startBtn");
     const categoryModal = document.getElementById("categoryModal");
     const modalClose = document.getElementById("modalClose");
@@ -590,7 +708,7 @@
       });
     }
 
-    // Items page initialization
+    // Items page init
     if(window.location.pathname.includes("items")){
       const detailFilterRaw = localStorage.getItem("detailFilter");
       if(detailFilterRaw){
@@ -623,7 +741,8 @@
             si2.dataset.checkedRarities = JSON.stringify(preRarities || []);
           }
           setTimeout(() => {
-            showChecklist(localStorage.getItem("activeCategory"), preTags, preRarities);
+            // when opening from detail we still hide the checklist title
+            showChecklist(localStorage.getItem("activeCategory"), preTags, preRarities, { showTitle: false });
             if(detailFilter.autoApply){
               setTimeout(()=> { applyChecklistFilters(); }, 300);
             }
@@ -635,17 +754,16 @@
       renderItems();
     }
 
-    // Detail page initialization
+    // Detail page
     if(window.location.pathname.includes("detail")){
       renderDetail();
     }
 
-    // modal close binding
     const modalCloseBtn = document.getElementById("modalCloseBtn");
     if(modalCloseBtn) modalCloseBtn.onclick = closeImageModal;
   });
 
-  // expose helpers
+  // expose modal funcs globally
   window.openImageModal = openImageModal;
   window.closeImageModal = closeImageModal;
 
