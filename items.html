@@ -11,7 +11,7 @@
 <body>
   <main class="container">
     <header class="header">
-      <h2 id="categoryTitle" class="title"></h2>
+      <h2 id="categoryTitle" class="title" aria-live="polite"></h2>
       <!-- Back button positioned to the right like requested -->
       <button class="nav-btn" onclick="goBack()" aria-label="Back">← Back</button>
     </header>
@@ -21,8 +21,8 @@
       <!-- checklist toggle inserted by script when appropriate -->
     </div>
 
-    <!-- checklist panel (inserted dynamically) -->
-    <section id="itemsContainer" class="grid"></section>
+    <!-- items grid inserted by script -->
+    <section id="itemsContainer" class="grid" aria-label="Items"></section>
   </main>
 </body>
 </html>
