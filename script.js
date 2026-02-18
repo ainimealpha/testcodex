@@ -1,13 +1,17 @@
-// script.js - REVISED (adds: detail->items tag gimmick, rarity filter, start button logic, items header logo, fixed back behavior)
+// script.js - REVISED (index modal gallery for START + robust binding + existing page logic)
+// This file assumes data.js defines DATA and PLACEHOLDER
 (function(){
   'use strict';
 
-  // Navigation helpers
+  // -------------------------
+  // Utilities & Globals
+  // -------------------------
+  const FALLBACK = (typeof PLACEHOLDER !== 'undefined') ? PLACEHOLDER : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'%3E%3Crect width='100%25' height='100%25' fill='%23ffe9a8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23333333' font-family='Arial' font-size='24'%3ENo Image%3C/text%3E%3C/svg%3E";
+
   function goHome(){ window.location.href = "index.html"; }
-  function goBack(){ window.history.back(); }
   function goBackToHome(){ window.location.href = "index.html"; }
 
-  // Category theme mapping
+  // category theme map (kept from previous revision)
   const CATEGORY_THEME = {
     CHARACTER: { bg: "linear-gradient(180deg,#f7eef8,#ffeef6)", tagBg: "#ffd6da", accent: "#ff6b6b" },
     AREA:      { bg: "linear-gradient(180deg,#fff8f0,#fff0e6)", tagBg: "#ffe6c9", accent: "#ff9f43" },
@@ -17,10 +21,14 @@
     DEFAULT:   { bg: "linear-gradient(180deg,#fff9c4,#ffe082)", tagBg: "#fff3cd", accent: "#ffd54f" }
   };
 
-  // Safe fallback placeholder
-  const FALLBACK = (typeof PLACEHOLDER !== 'undefined') ? PLACEHOLDER : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'%3E%3Crect width='100%25' height='100%25' fill='%23ffe9a8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23333333' font-family='Arial' font-size='24'%3ENo Image%3C/text%3E%3C/svg%3E";
+  function applyCategoryTheme(catKey){
+    const theme = (catKey && CATEGORY_THEME[catKey]) ? CATEGORY_THEME[catKey] : CATEGORY_THEME.DEFAULT;
+    document.body.style.background = theme.bg;
+    document.documentElement.style.setProperty('--tag-bg', theme.tagBg);
+    document.documentElement.style.setProperty('--accent-color', theme.accent);
+  }
 
-  // Find item by id across DATA
+  // find item/category helpers
   function findItemById(id){
     let found = null;
     Object.keys(DATA).some(catKey => {
@@ -31,8 +39,6 @@
     });
     return found;
   }
-
-  // Find category key by item id
   function findCategoryByItemId(id){
     let foundKey = null;
     Object.keys(DATA).some(catKey => {
@@ -42,93 +48,92 @@
     return foundKey;
   }
 
-  // Apply category theme (colors)
-  function applyCategoryTheme(catKey){
-    const theme = (catKey && CATEGORY_THEME[catKey]) ? CATEGORY_THEME[catKey] : CATEGORY_THEME.DEFAULT;
-    document.body.style.background = theme.bg;
-    document.documentElement.style.setProperty('--tag-bg', theme.tagBg);
-    document.documentElement.style.setProperty('--accent-color', theme.accent);
-  }
+  // -------------------------
+  // PAGE 1: START button modal gallery
+  // -------------------------
+  function buildCategoryCard(key){
+    const cat = DATA[key];
+    const firstItem = (cat && cat.items && cat.items[0]) ? cat.items[0] : null;
+    const thumb = (firstItem && firstItem.images && firstItem.images.main) ? firstItem.images.main : FALLBACK;
 
-  function resetBodyBackground(){
-    document.body.style.background = "";
-    document.body.style.backgroundImage = "";
-    document.body.style.backgroundSize = "";
-    document.body.style.backgroundPosition = "";
-    document.body.style.backgroundRepeat = "";
-    document.body.style.backgroundAttachment = "";
-    const ov = document.getElementById("detailOverlay");
-    if(ov) ov.remove();
-    const c = document.querySelector(".container");
-    if(c){ c.style.position = ""; c.style.zIndex = ""; }
-  }
+    const card = document.createElement('div');
+    card.className = "card cat-card";
+    card.tabIndex = 0;
 
-  /* =========================
-     PAGE 1: categories + START button
-  ========================= */
-  function renderCategories(){
-    resetBodyBackground();
-    const container = document.getElementById("categoryContainer");
-    if(!container) return;
-    container.innerHTML = "";
+    const imgWrap = document.createElement('div');
+    imgWrap.className = "card-imgwrap";
+    const img = document.createElement('img');
+    img.src = thumb;
+    img.alt = `${cat.title || key} preview`;
+    img.loading = "lazy";
+    imgWrap.appendChild(img);
+    card.appendChild(imgWrap);
 
-    Object.keys(DATA).forEach(key => {
-      const cat = DATA[key];
-      const firstItem = (cat.items && cat.items[0]) ? cat.items[0] : null;
-      const thumb = (firstItem && firstItem.images && firstItem.images.main) ? firstItem.images.main : FALLBACK;
+    const h3 = document.createElement('h3');
+    h3.textContent = cat.title || key;
+    card.appendChild(h3);
 
-      const card = document.createElement('div');
-      card.className = "card cat-card small-card";
-      card.tabIndex = 0;
-
-      // image wrapper so tags/rarity overlay possible later if needed
-      const imgWrap = document.createElement('div');
-      imgWrap.className = "card-imgwrap";
-      const img = document.createElement('img');
-      img.src = thumb;
-      img.alt = `${cat.title} preview`;
-      img.loading = "lazy";
-      imgWrap.appendChild(img);
-      card.appendChild(imgWrap);
-
-      const h3 = document.createElement('h3');
-      h3.textContent = cat.title || key;
-      card.appendChild(h3);
-
-      card.addEventListener('click', () => {
-        localStorage.setItem("activeCategory", key);
-        try {
-          const si = document.getElementById("searchInput");
-          if(si){ delete si.dataset.checkedTags; si.value = ""; }
-        } catch(e){}
-        window.location.href = "items.html";
-      });
-      card.addEventListener('keypress', (e) => { if(e.key === "Enter") card.click(); });
-
-      container.appendChild(card);
+    // click: set activeCategory and go to items.html
+    card.addEventListener('click', () => {
+      localStorage.setItem("activeCategory", key);
+      // close modal then navigate
+      closeCategoryModal();
+      window.location.href = "items.html";
     });
+    card.addEventListener('keypress', (e) => { if(e.key === "Enter") card.click(); });
+
+    return card;
   }
 
-  /* =========================
-     PAGE 2: items + filters (tags + rarity)
-  ========================= */
+  function openCategoryModal(){
+    const modal = document.getElementById('categoryModal');
+    if(!modal) return;
+    // populate grid
+    const grid = document.getElementById('categoryGrid');
+    if(grid) {
+      grid.innerHTML = "";
+      Object.keys(DATA).forEach(key => {
+        const card = buildCategoryCard(key);
+        grid.appendChild(card);
+      });
+    }
+    modal.classList.remove('hidden');
+    // focus first card
+    setTimeout(() => {
+      const first = modal.querySelector('.card');
+      if(first) first.focus();
+    }, 50);
+    // trap focus lightly (basic)
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeCategoryModal(){
+    const modal = document.getElementById('categoryModal');
+    if(!modal) return;
+    modal.classList.add('hidden');
+    document.body.style.overflow = "";
+    // return focus to start
+    const startBtn = document.getElementById('startBtn');
+    if(startBtn) startBtn.focus();
+  }
+
+  // -------------------------
+  // PAGE 2: items listing (kept compatible w/ previous logic)
+  // -------------------------
   function uniqueTagsForCategory(catKey){
     if(!DATA[catKey]) return [];
     const s = new Set();
     DATA[catKey].items.forEach(it => (it.tags||[]).forEach(t => s.add(t)));
     return Array.from(s);
   }
-
   function uniqueRaritiesForCategory(catKey){
     if(!DATA[catKey]) return [];
     const s = new Set();
     DATA[catKey].items.forEach(it => { if(it.rarity) s.add(it.rarity); });
-    // ensure sorted S,A,B,C,D order when present
     const order = ["S","A","B","C","D"];
     return Array.from(s).sort((a,b) => order.indexOf(a) - order.indexOf(b));
   }
 
-  // showChecklist accepts optional preselected arrays
   function showChecklist(catKey, preSelectedTags = [], preSelectedRarities = []){
     hideChecklist();
     const panel = document.createElement('div');
@@ -148,14 +153,13 @@
     header.appendChild(closeBtn);
     panel.appendChild(header);
 
-    // TAGS section
+    // TAGS
     const tagsSection = document.createElement('div');
     tagsSection.className = "checklist-section";
     const tagLabel = document.createElement('div');
     tagLabel.className = "checklist-subtitle";
     tagLabel.textContent = "Tags";
     tagsSection.appendChild(tagLabel);
-
     const chips = document.createElement('div');
     chips.className = "checklist-chips";
     const tags = uniqueTagsForCategory(catKey);
@@ -182,7 +186,7 @@
     tagsSection.appendChild(chips);
     panel.appendChild(tagsSection);
 
-    // RARITY section
+    // RARITY
     const rarities = uniqueRaritiesForCategory(catKey);
     const raritySection = document.createElement('div');
     raritySection.className = "checklist-section";
@@ -190,10 +194,8 @@
     rarityLabel.className = "checklist-subtitle";
     rarityLabel.textContent = "Rarity";
     raritySection.appendChild(rarityLabel);
-
     const rarityChips = document.createElement('div');
     rarityChips.className = "checklist-chips";
-    // default order
     const order = ["S","A","B","C","D"];
     const avail = rarities.length ? rarities : order;
     avail.forEach(r => {
@@ -227,7 +229,6 @@
     if(container){
       if(itemsNode) container.insertBefore(panel, itemsNode);
       else container.appendChild(panel);
-      // focus apply button for accessibility
       apply.focus();
     }
   }
@@ -240,22 +241,15 @@
   function applyChecklistFilters(){
     const panel = document.getElementById("checklistPanel");
     if(!panel) return;
-    const checkedTags = Array.from(panel.querySelectorAll('input[type="checkbox"]'))
-      .filter(i => i.parentElement && i.parentElement.parentElement && i.parentElement.parentElement.previousSibling && i.parentElement.parentElement.previousSibling.textContent === "Tags" ? i.checked : false)
-      .map(i => i.value);
-    // above approach complicated; simpler:
     const allChips = Array.from(panel.querySelectorAll('.chip input'));
     const tagsChecked = [];
     const rarityChecked = [];
     allChips.forEach(inp => {
-      const txt = inp.nextSibling ? inp.nextSibling.textContent : "";
       if(inp.checked){
-        // decide if it's a rarity chip by checking value in S/A/B/C/D
         if(["S","A","B","C","D"].includes(inp.value)) rarityChecked.push(inp.value);
         else tagsChecked.push(inp.value);
       }
     });
-
     const searchInput = document.getElementById("searchInput");
     if(searchInput) {
       searchInput.dataset.checkedTags = JSON.stringify(tagsChecked);
@@ -287,7 +281,6 @@
   }
 
   function renderItems(){
-    resetBodyBackground();
     const category = localStorage.getItem("activeCategory");
     if(!category || !DATA[category]) { goHome(); return; }
     applyCategoryTheme(category);
@@ -296,7 +289,6 @@
     const title = document.getElementById("categoryTitle");
     if(title) title.textContent = data.title || category;
 
-    // inject small logo image next to title (first item image)
     const logoWrap = document.getElementById("categoryLogoWrap");
     if(logoWrap){
       logoWrap.innerHTML = "";
@@ -349,7 +341,7 @@
     items.forEach(it => {
       const div = document.createElement("div");
       div.className = "card item-card small-card";
-      div.style.position = "relative"; // for overlays
+      div.style.position = "relative";
 
       const thumbWrap = document.createElement('div');
       thumbWrap.className = "thumb-wrap";
@@ -362,13 +354,11 @@
       img.alt = it.name || "item";
       thumbWrap.appendChild(img);
 
-      // top-right rarity badge
       const rarityBadge = document.createElement('span');
       rarityBadge.className = "rarity-badge";
       rarityBadge.textContent = it.rarity || "";
       thumbWrap.appendChild(rarityBadge);
 
-      // tags overlay (bottom-left)
       const overlayTags = document.createElement('div');
       overlayTags.className = "img-overlay-tags";
       (it.tags||[]).slice(0,3).forEach(t => {
@@ -399,9 +389,9 @@
     });
   }
 
-  /* =========================
-     PAGE 3: detail (safe DOM creation + story + clickable tags gimmick)
-  ========================= */
+  // -------------------------
+  // PAGE 3: detail
+  // -------------------------
   function ensureDetailOverlay(){
     let ov = document.getElementById("detailOverlay");
     if(!ov){
@@ -429,7 +419,6 @@
     const selected = findItemById(id);
     if(!selected){ container.innerHTML = "<div class='card'><h3>Item not found</h3></div>"; return; }
 
-    // find category
     let category = localStorage.getItem("activeCategory") || findCategoryByItemId(id);
     if(!category){
       Object.keys(DATA).some(k => {
@@ -439,7 +428,6 @@
     }
     applyCategoryTheme(category);
 
-    // MAIN wallpaper fixed to selected.images.main (if present)
     const wallpaperUrl = (selected.images && selected.images.main) ? selected.images.main : null;
     if(wallpaperUrl){
       document.body.style.backgroundImage = `url("${wallpaperUrl}")`;
@@ -448,7 +436,6 @@
       document.body.style.backgroundRepeat = "no-repeat";
       document.body.style.backgroundAttachment = "fixed";
     } else {
-      resetBodyBackground();
       applyCategoryTheme(category);
     }
 
@@ -458,7 +445,6 @@
     const extras = (selected.images && Array.isArray(selected.images.extras)) ? selected.images.extras.slice(0,3) : [];
     const tags = (selected.tags || []).slice(0,10);
 
-    // build detail DOM (safe)
     container.innerHTML = "";
     const wrapper = document.createElement('div');
     wrapper.className = "detail-wrapper";
@@ -490,14 +476,11 @@
       const sp = document.createElement('span');
       sp.className = "tag";
       sp.textContent = String(t).toUpperCase();
-      // clickable gimmick: when clicked, go to items page, open filters, apply this tag
       sp.style.cursor = "pointer";
       sp.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        // store filter instruction
         const detailFilter = { tags: [t], rarities: [], category: category, autoApply: true };
         localStorage.setItem("detailFilter", JSON.stringify(detailFilter));
-        // navigate to items
         localStorage.setItem("activeCategory", category);
         window.location.href = "items.html";
       });
@@ -508,7 +491,6 @@
     heroCard.appendChild(heroOverlay);
     wrapper.appendChild(heroCard);
 
-    // RARITY indicator on detail hero overlay (top-right)
     if(selected.rarity){
       const rarityBadgeDetail = document.createElement('div');
       rarityBadgeDetail.className = "detail-rarity-badge";
@@ -516,23 +498,18 @@
       heroOverlay.appendChild(rarityBadgeDetail);
     }
 
-    // ===== STORY SECTION =====
     if(selected.story && String(selected.story).trim().length > 0){
       const storyCard = document.createElement('div');
       storyCard.className = 'story-card';
-
       const storyTitle = document.createElement('h3');
       storyTitle.textContent = 'Story';
       storyCard.appendChild(storyTitle);
-
       const storyText = document.createElement('p');
       storyText.textContent = selected.story;
       storyCard.appendChild(storyText);
-
       wrapper.appendChild(storyCard);
     }
 
-    // extras
     const extrasWrap = document.createElement('div');
     extrasWrap.className = "extras";
     extras.forEach((src, idx) => {
@@ -550,61 +527,64 @@
     container.appendChild(wrapper);
   }
 
-  /* Modal preview (extras only) */
+  // simple image modal
   function openImageModal(src){
     const modal = document.getElementById("imgModal");
     const img = document.getElementById("imgModalImg");
     if(!modal || !img) return;
     img.src = src || FALLBACK;
     modal.style.display = "flex";
-    const closeBtn = document.getElementById("modalCloseBtn");
-    if(closeBtn) closeBtn.focus();
     document.addEventListener("keydown", escModalHandler);
   }
-
   function closeImageModal(){
     const modal = document.getElementById("imgModal");
     if(modal) modal.style.display = "none";
     document.removeEventListener("keydown", escModalHandler);
   }
-
   function escModalHandler(e){
     if(e.key === "Escape") closeImageModal();
   }
 
-  // click outside to close
   document.addEventListener("click", function(e){
     const modal = document.getElementById("imgModal");
     if(!modal || modal.style.display !== "flex") return;
     if(e.target === modal) closeImageModal();
   });
 
-  // Document init
+  // -------------------------
+  // Initialization on DOMContentLoaded
+  // -------------------------
   document.addEventListener("DOMContentLoaded", function(){
-    // INDEX (page 1) logic: show START button; render categories only after START pressed
-    if(window.location.pathname.includes("index") || window.location.pathname === "/" ){
-      const startBtn = document.getElementById("startBtn");
-      const startWrap = document.getElementById("startWrap");
-      const catContainer = document.getElementById("categoryContainer");
-      // style/theme for page 1 (fantasy dreamy)
-      document.body.style.background = "linear-gradient(180deg,#f6f0ff,#e6f7ff)";
-      // center header adjustments handled by CSS
-      if(startBtn){
-        startBtn.addEventListener('click', () => {
-          // hide start and reveal categories
-          if(startWrap) startWrap.style.display = "none";
-          if(catContainer) catContainer.classList.remove("hidden");
-          renderCategories();
-        });
+    // === INDEX PAGE: robust binding for START button ===
+    const startBtn = document.getElementById("startBtn");
+    const startWrap = document.getElementById("startWrap");
+    const categoryModal = document.getElementById("categoryModal");
+    const modalClose = document.getElementById("modalClose");
+    if(startBtn){
+      // ensure clickable regardless of path
+      startBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openCategoryModal();
+      });
+    }
+    if(modalClose){
+      modalClose.addEventListener('click', closeCategoryModal);
+    }
+    // close modal on Escape
+    document.addEventListener('keydown', (e) => {
+      if(e.key === "Escape"){
+        if(categoryModal && !categoryModal.classList.contains('hidden')) closeCategoryModal();
       }
-      // don't call renderCategories here until START
-    } else {
-      // render categories for other pages if needed (no-op)
-      renderCategories();
+    });
+    // if user clicks outside content area close
+    if(categoryModal){
+      categoryModal.addEventListener('click', (ev) => {
+        if(ev.target === categoryModal) closeCategoryModal();
+      });
     }
 
+    // === ITEMS PAGE logic ===
     if(window.location.pathname.includes("items")){
-      // If navigated from detail with a filter instruction, pick it up
       const detailFilterRaw = localStorage.getItem("detailFilter");
       if(detailFilterRaw){
         try {
@@ -625,45 +605,41 @@
         si.addEventListener("blur", () => setTimeout(()=>manageChecklistToggle(localStorage.getItem("activeCategory")), 150));
       }
 
-      // If detailFilter exists, pre-open filters & apply, then remove the instruction
       if(detailFilterRaw){
         try {
           const detailFilter = JSON.parse(detailFilterRaw);
           const preTags = detailFilter.tags || [];
           const preRarities = detailFilter.rarities || [];
-          // set dataset on searchInput to hold these before rendering
           const si2 = document.getElementById("searchInput");
           if(si2){
             si2.dataset.checkedTags = JSON.stringify(preTags);
             si2.dataset.checkedRarities = JSON.stringify(preRarities || []);
           }
-          // showChecklist with preselected and auto apply after short delay
           setTimeout(() => {
             showChecklist(localStorage.getItem("activeCategory"), preTags, preRarities);
-            // auto-apply if requested
             if(detailFilter.autoApply){
               setTimeout(()=> { applyChecklistFilters(); }, 300);
             }
           }, 200);
         } catch(e){}
-        // remove instruction so it doesn't persist
         localStorage.removeItem("detailFilter");
       }
 
       renderItems();
     }
 
+    // === DETAIL PAGE ===
     if(window.location.pathname.includes("detail")){
       renderDetail();
     }
 
-    const modalClose = document.getElementById("modalCloseBtn");
-    if(modalClose) modalClose.onclick = closeImageModal;
+    // modal image close button binding (if exists)
+    const modalCloseBtn = document.getElementById("modalCloseBtn");
+    if(modalCloseBtn) modalCloseBtn.onclick = closeImageModal;
   });
 
-  // expose helpers for inline use
+  // expose a couple helpers for inline/back usage if needed
   window.goHome = goHome;
-  window.goBack = goBack;
   window.goBackToHome = goBackToHome;
   window.openImageModal = openImageModal;
   window.closeImageModal = closeImageModal;
