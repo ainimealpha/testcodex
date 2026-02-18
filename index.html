@@ -12,21 +12,33 @@
   <main class="container">
     <header class="header header-centered">
       <h1 class="logo">ANIME CODEX</h1>
-      <!-- Season text & subtitle (centered below logo) -->
-      <div class="hero-text">
-        <div class="season-line">SEASON 1 - Adventure Begins</div>
-        <div class="arc-line">Adventure Arc</div>
-      </div>
-      <p class="subtitle subtitle-centered">Tap a card to open the category</p>
     </header>
 
     <!-- START button (large) -->
     <div class="start-wrap" id="startWrap">
-      <button id="startBtn" class="start-btn" type="button">START</button>
+      <button id="startBtn" class="start-btn" type="button" aria-haspopup="dialog" aria-controls="categoryModal">START</button>
     </div>
 
-    <!-- category grid (initially hidden until START pressed) -->
-    <section id="categoryContainer" class="grid hidden" aria-label="Categories"></section>
+    <!-- season text & subtitle: BELOW START as requested -->
+    <div class="hero-text hero-text-below">
+      <div class="season-line">SEASON 1 - Adventure Begins</div>
+      <div class="arc-line">Adventure Arc</div>
+    </div>
+    <p class="subtitle subtitle-centered">Tap a card to open the category</p>
+
+    <!-- category modal (popup) - initially hidden; opened by START -->
+    <div id="categoryModal" class="category-modal hidden" role="dialog" aria-modal="true" aria-labelledby="categoryModalTitle">
+      <div class="category-modal-content" role="document">
+        <div class="modal-header">
+          <h2 id="categoryModalTitle">Choose a Category</h2>
+          <button id="modalClose" class="nav-btn" aria-label="Close categories">✕</button>
+        </div>
+        <div id="categoryGrid" class="grid category-grid" aria-live="polite">
+          <!-- category cards inserted here by script -->
+        </div>
+      </div>
+    </div>
+
   </main>
 </body>
 </html>
