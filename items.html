@@ -13,17 +13,19 @@
     <header class="header items-header">
       <div class="category-title-wrap">
         <h2 id="categoryTitle" class="title" aria-live="polite"></h2>
-        <img id="categoryLogo" class="category-logo" src="" alt="Category Logo">
+        <!-- small logo image for the category -->
+        <img id="categoryLogo" class="category-logo" src="" alt="Category Logo" />
       </div>
-      <!-- Back harus langsung ke HOME -->
+
+      <!-- Back MUST always go to HOME (index.html) -->
       <button class="nav-btn" onclick="goBack()" aria-label="Back">← Back</button>
     </header>
 
     <div class="controls">
       <input id="searchInput" type="search" placeholder="Search in this category..." aria-label="Search" />
+      <!-- Filters toggle injected by script -->
     </div>
 
-    <!-- items grid inserted by script -->
     <section id="itemsContainer" class="grid" aria-label="Items"></section>
   </main>
 </body>
