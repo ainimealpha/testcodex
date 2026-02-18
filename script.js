@@ -1,42 +1,54 @@
-// script.js - FULL REVISED (restore full features + auto-filter gimmick + index-only theme)
+// script.js — fixed: robust page detection, autoFilterTag apply (no blocking panel),
+// checklist tint per-category, safe fallbacks
 (function(){
   'use strict';
 
   // Navigation helpers
   function goHome(){ window.location.href = "index.html"; }
 
-  // IMPORTANT: Back on items page must always go to Home
+  // Back: if we're on items page, ALWAYS go to index.html (per spec)
   function goBack(){
     try {
-      if(window.location.pathname.includes("items")) {
-        window.location.href = "index.html";
-      } else {
-        window.history.back();
-      }
+      if(isItemsPage()) window.location.href = "index.html";
+      else window.history.back();
     } catch(e){
-      window.history.back();
+      window.location.href = "index.html";
     }
   }
 
-  // Category theme mapping (used on items/detail pages)
+  // Category theme mapping (used on items & detail)
   const CATEGORY_THEME = {
     CHARACTER: { bg: "linear-gradient(180deg,#ffe6e8,#ffd6da)", tagBg: "#ffd6da", accent: "#ff6b6b" },
-    AREA:      { bg: "linear-gradient(180deg,#fff2e6,#ffd9b8)", tagBg: "#ffe6c7", accent: "#ff9f43" },
+    AREA:      { bg: "linear-gradient(180deg,#fff2e6,#ffd9b8)", tagBg: "#ffe4c7", accent: "#ff9f43" },
     PET:       { bg: "linear-gradient(180deg,#fffbe6,#fff4b2)", tagBg: "#fff5b2", accent: "#ffd54f" },
     MONSTER:   { bg: "linear-gradient(180deg,#f3e8ff,#e8d7ff)", tagBg: "#eadcff", accent: "#9b59b6" },
     MAGIC:     { bg: "linear-gradient(180deg,#e8f4ff,#d0ecff)", tagBg: "#d6efff", accent: "#4da6ff" },
     DEFAULT:   { bg: "linear-gradient(180deg,#fff9c4,#ffe082)", tagBg: "#fff3cd", accent: "#ffd54f" }
   };
 
-  // Index (page 1) special dreamy theme (only for index)
+  // Index-only dreamy theme
   const INDEX_THEME = {
     bg: "linear-gradient(180deg,#0b1024 0%, #3b1164 40%, #6b2b9b 100%)",
     tagBg: "#b9a6ff",
     accent: "#ffd6fb"
   };
 
-  // Safe fallback placeholder
-  const FALLBACK = (typeof PLACEHOLDER !== 'undefined') ? PLACEHOLDER : "";
+  // Safe fallback placeholder (from data.js PLACEHOLDER if available)
+  const FALLBACK = (typeof PLACEHOLDER !== 'undefined' && PLACEHOLDER) ? PLACEHOLDER : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'%3E%3Crect width='100%25' height='100%25' fill='%23ffe9a8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23333333' font-family='Arial' font-size='24'%3ENo Image%3C/text%3E%3C/svg%3E";
+
+  // Helper: robust page detection (works for various hosting path forms)
+  function isIndexPage(){
+    const p = window.location.pathname || "";
+    return /(^\/?$)|index\.html$/i.test(p);
+  }
+  function isItemsPage(){
+    const p = window.location.pathname || "";
+    return /items\.html$/i.test(p);
+  }
+  function isDetailPage(){
+    const p = window.location.pathname || "";
+    return /detail\.html$/i.test(p);
+  }
 
   // Find item by id across DATA
   function findItemById(id){
@@ -50,7 +62,7 @@
     return found;
   }
 
-  // Apply category theme (for items/detail only)
+  // Apply category theme (items/detail)
   function applyCategoryTheme(catKey){
     const theme = (catKey && CATEGORY_THEME[catKey]) ? CATEGORY_THEME[catKey] : CATEGORY_THEME.DEFAULT;
     document.body.style.background = theme.bg;
@@ -83,7 +95,7 @@
   ========================= */
   function renderCategories(){
     resetBodyBackground();
-    applyIndexTheme(); // index-only theme
+    applyIndexTheme();
     const container = document.getElementById("categoryContainer");
     if(!container) return;
     container.innerHTML = "";
@@ -109,10 +121,8 @@
 
       card.addEventListener('click', () => {
         localStorage.setItem("activeCategory", key);
-        try {
-          const si = document.getElementById("searchInput");
-          if(si){ delete si.dataset.checkedTags; si.value = ""; }
-        } catch(e){}
+        // clear any residual autoFilter
+        localStorage.removeItem("autoFilterTag");
         window.location.href = "items.html";
       });
       card.addEventListener('keypress', (e) => { if(e.key === "Enter") card.click(); });
@@ -131,11 +141,30 @@
     return Array.from(s);
   }
 
+  // small helper: convert hex -> rgba with alpha
+  function hexToRgba(hex, a){
+    if(!hex) return `rgba(0,0,0,${a})`;
+    // accept #rrggbb or #rgb
+    hex = hex.replace('#','');
+    if(hex.length === 3){
+      hex = hex.split('').map(ch => ch+ch).join('');
+    }
+    const r = parseInt(hex.substr(0,2),16);
+    const g = parseInt(hex.substr(2,2),16);
+    const b = parseInt(hex.substr(4,2),16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
   function showChecklist(catKey){
     hideChecklist();
     const panel = document.createElement('div');
     panel.id = "checklistPanel";
     panel.className = "checklist-panel";
+
+    // tint panel background using category accent for a slightly darker, matching color
+    const theme = (catKey && CATEGORY_THEME[catKey]) ? CATEGORY_THEME[catKey] : CATEGORY_THEME.DEFAULT;
+    // use accent with low alpha
+    panel.style.background = hexToRgba(theme.accent || '#000000', 0.12);
 
     const header = document.createElement('div');
     header.className = "checklist-header";
@@ -200,14 +229,16 @@
 
   function applyChecklistFilters(){
     const panel = document.getElementById("checklistPanel");
-    if(!panel) return;
+    if(!panel){
+      renderItems(); // nothing to apply
+      return;
+    }
     const checked = Array.from(panel.querySelectorAll('input[type="checkbox"]:checked')).map(i => i.value);
     const searchInput = document.getElementById("searchInput");
     if(searchInput) {
       searchInput.dataset.checkedTags = JSON.stringify(checked);
     }
     hideChecklist();
-    // renderItems will read dataset.checkedTags
     renderItems();
   }
 
@@ -246,6 +277,7 @@
     if(logo){
       const firstItem = (data.items && data.items[0]) ? data.items[0] : null;
       logo.src = (firstItem && firstItem.images && firstItem.images.main) ? firstItem.images.main : FALLBACK;
+      logo.alt = data.title + " logo";
     }
 
     const searchInput = document.getElementById("searchInput");
@@ -256,21 +288,15 @@
       catch(e){ checkedTags = []; }
     }
 
-    // If there's an autoFilterTag set by detail page, open checklist, check it and apply automatically
+    // Improved autoFilterTag flow:
+    // If detail page set autoFilterTag, we simply apply it silently by setting checkedTags
     const autoTag = localStorage.getItem("autoFilterTag");
-    if(autoTag){
-      // show checklist, pre-check the input, then apply and exit (render will be called by applyChecklistFilters)
-      showChecklist(category);
-      const panel = document.getElementById("checklistPanel");
-      if(panel){
-        const input = panel.querySelector(`input[type="checkbox"][value="${autoTag}"]`);
-        if(input) input.checked = true;
-        // apply (this will call renderItems again with checkedTags set)
-        applyChecklistFilters();
-        // cleanup autoTag so this flow doesn't repeat
-        localStorage.removeItem("autoFilterTag");
-        return; // render will be done in applyChecklistFilters -> renderItems
-      }
+    if(autoTag && searchInput){
+      // set dataset directly so render below will use it
+      searchInput.dataset.checkedTags = JSON.stringify([autoTag]);
+      localStorage.removeItem("autoFilterTag");
+      // reflect checkedTags variable
+      checkedTags = [autoTag];
     }
 
     let items = (data.items||[]).filter(it => (it.name||"").toLowerCase().includes(search));
@@ -415,14 +441,11 @@
       const sp = document.createElement('span');
       sp.className = "tag";
       sp.textContent = String(t).toUpperCase();
-      // GIMMICK: klik tag -> buka items page, buka filters, apply tag
+      // GIMMICK: klik tag -> set autoFilterTag + redirect to items
       sp.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        // ensure activeCategory set (so items page knows which category)
         if(category) localStorage.setItem("activeCategory", category);
-        // set auto filter tag
         localStorage.setItem("autoFilterTag", t);
-        // redirect to items page (items.js will open checklist and apply)
         window.location.href = "items.html";
       });
       tagWrap.appendChild(sp);
@@ -488,25 +511,20 @@
     if(e.key === "Escape") closeImageModal();
   }
 
-  // click outside to close
+  // click outside to close modal
   document.addEventListener("click", function(e){
     const modal = document.getElementById("imgModal");
     if(!modal || modal.style.display !== "flex") return;
     if(e.target === modal) closeImageModal();
   });
 
-  // Document init
+  // Document init (robust per-page)
   document.addEventListener("DOMContentLoaded", function(){
-    // Only index should use index theme and render categories
-    if(window.location.pathname.includes("index") || window.location.pathname === "/" || window.location.pathname.endsWith("/")){
+    if(isIndexPage()){
       renderCategories();
-    } else {
-      // Reset and let specific page renderers set their theme
-      resetBodyBackground();
-      renderCategories(); // harmless if not on index (renderCategories checks container)
     }
 
-    if(window.location.pathname.includes("items")){
+    if(isItemsPage()){
       const si = document.getElementById("searchInput");
       const activeCategory = localStorage.getItem("activeCategory");
       if(activeCategory) applyCategoryTheme(activeCategory);
@@ -518,7 +536,7 @@
       renderItems();
     }
 
-    if(window.location.pathname.includes("detail")){
+    if(isDetailPage()){
       renderDetail();
     }
 
