@@ -1,11 +1,11 @@
-// script.js - UPDATED: start modal filter-like; checklist options; items/detail fixes (extras slider + center popup)
+// script.js - REVISI FINAL (index/items/detail behavior)
 // Assumes data.js defines DATA and PLACEHOLDER
 (function(){
   'use strict';
 
-  // -------------------------
-  // Utilities & Globals
-  // -------------------------
+  // =========================
+  // Globals & Helpers
+  // =========================
   const FALLBACK = (typeof PLACEHOLDER !== 'undefined') ? PLACEHOLDER : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'%3E%3Crect width='100%25' height='100%25' fill='%23ffe9a8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23333333' font-family='Arial' font-size='24'%3ENo Image%3C/text%3E%3C/svg%3E";
 
   // Navigation helpers
@@ -13,10 +13,11 @@
   function goBackToHome(){ window.location.href = "index.html"; }
   function goToItemsPage(){ window.location.href = "items.html"; }
 
+  // expose for HTML onclicks
+  window.goHome = goHome;
   window.goBackToHome = goBackToHome;
   window.goToItemsPage = goToItemsPage;
 
-  // Category theme map
   const CATEGORY_THEME = {
     CHARACTER: { bg: "linear-gradient(180deg,#f7eef8,#ffeef6)", tagBg: "#ffd6da", accent: "#ff6b6b" },
     AREA:      { bg: "linear-gradient(180deg,#fff8f0,#fff0e6)", tagBg: "#ffe6c9", accent: "#ff9f43" },
@@ -33,7 +34,6 @@
     document.documentElement.style.setProperty('--accent-color', theme.accent);
   }
 
-  // helpers
   function findItemById(id){
     let found = null;
     Object.keys(DATA).some(catKey => {
@@ -53,16 +53,9 @@
     return foundKey;
   }
 
-  // -------------------------
-  // Page1: START modal with filter-like chips
-  // -------------------------
-  function aggregateAllTags(){
-    const s = new Set();
-    Object.keys(DATA).forEach(k => {
-      (DATA[k].items||[]).forEach(it => (it.tags||[]).forEach(t=>s.add(t)));
-    });
-    return Array.from(s);
-  }
+  // =========================
+  // PAGE 1: START modal (ONLY category grid; no tags/rarity shown)
+  // =========================
   function buildCategoryCardForModal(key){
     const cat = DATA[key];
     const firstItem = (cat && cat.items && cat.items[0]) ? cat.items[0] : null;
@@ -85,6 +78,7 @@
     h3.textContent = cat.title || key;
     card.appendChild(h3);
 
+    // click goes to items for that category
     card.addEventListener('click', () => {
       localStorage.setItem("activeCategory", key);
       closeCategoryModal();
@@ -96,53 +90,14 @@
   function openCategoryModal(){
     const modal = document.getElementById('categoryModal');
     if(!modal) return;
-    // populate tags & rarity chips for modal filters
-    const allTags = aggregateAllTags().sort();
-    const tagsWrap = document.getElementById('modalTagChips');
-    const rarityWrap = document.getElementById('modalRarityChips');
-    if(tagsWrap){
-      tagsWrap.innerHTML = "";
-      allTags.forEach(t => {
-        const label = document.createElement('label');
-        label.className = 'chip';
-        const input = document.createElement('input');
-        input.type = 'checkbox';
-        input.value = t;
-        input.addEventListener('change', filterCategoriesInModal);
-        const span = document.createElement('span');
-        span.textContent = t;
-        label.appendChild(input);
-        label.appendChild(span);
-        tagsWrap.appendChild(label);
-      });
-    }
-    if(rarityWrap){
-      rarityWrap.innerHTML = "";
-      const order = ["S","A","B","C","D"];
-      order.forEach(r => {
-        const lab = document.createElement('label');
-        lab.className = 'chip rarity-chip';
-        const input = document.createElement('input');
-        input.type = 'checkbox';
-        input.value = r;
-        input.addEventListener('change', filterCategoriesInModal);
-        const span = document.createElement('span');
-        span.textContent = r;
-        lab.appendChild(input);
-        lab.appendChild(span);
-        rarityWrap.appendChild(lab);
-      });
-    }
-    // populate category grid (all initially)
+    // Populate categories only (no tags/rarity here)
     const grid = document.getElementById('categoryGrid');
     if(grid){
       grid.innerHTML = "";
       Object.keys(DATA).forEach(key => {
-        const c = buildCategoryCardForModal(key);
-        grid.appendChild(c);
+        grid.appendChild(buildCategoryCardForModal(key));
       });
     }
-
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     setTimeout(()=> {
@@ -150,7 +105,6 @@
       if(first) first.focus();
     },50);
   }
-
   function closeCategoryModal(){
     const modal = document.getElementById('categoryModal');
     if(!modal) return;
@@ -158,49 +112,20 @@
     document.body.style.overflow = '';
   }
 
-  // filters categories based on checked chips (modal)
-  function filterCategoriesInModal(){
-    const grid = document.getElementById('categoryGrid');
-    if(!grid) return;
-    const selectedTags = Array.from(document.querySelectorAll('#modalTagChips input:checked')).map(i => i.value);
-    const selectedRarities = Array.from(document.querySelectorAll('#modalRarityChips input:checked')).map(i => i.value);
-
-    grid.innerHTML = "";
-    Object.keys(DATA).forEach(key => {
-      const items = DATA[key].items || [];
-      let ok = true;
-      if(selectedTags.length > 0){
-        ok = items.some(it => (it.tags||[]).some(t => selectedTags.includes(t)));
-      }
-      if(ok && selectedRarities.length > 0){
-        ok = items.some(it => selectedRarities.includes(it.rarity));
-      }
-      if(ok){
-        grid.appendChild(buildCategoryCardForModal(key));
-      }
-    });
-    // if empty, show all categories as fallback (helps UX)
-    if(grid.childElementCount === 0){
-      grid.innerHTML = "";
-      Object.keys(DATA).forEach(key => grid.appendChild(buildCategoryCardForModal(key)));
-    }
-  }
-
-  // -------------------------
-  // Page2: checklist with option to hide title (we remove "Filter tags & rarity" text)
-  // -------------------------
+  // =========================
+  // PAGE 2: filters & items
+  // =========================
   function uniqueTagsForCategory(catKey){
     if(!DATA[catKey]) return [];
     const s = new Set();
     DATA[catKey].items.forEach(it => (it.tags||[]).forEach(t => s.add(t)));
     return Array.from(s);
   }
-  // always return full S..D order for display
   function uniqueRaritiesForCategory(catKey){
     return ["S","A","B","C","D"];
   }
 
-  // showChecklist signature updated: (catKey, preTags=[], preRarities=[], options={showTitle:true})
+  // showChecklist signature: (catKey, preTags, preRarities, options)
   function showChecklist(catKey, preSelectedTags = [], preSelectedRarities = [], options = { showTitle: true }){
     hideChecklist();
     const panel = document.createElement('div');
@@ -209,25 +134,25 @@
 
     const header = document.createElement('div');
     header.className = "checklist-header";
-    // only show close button (title removed for page2 when options.showTitle===false)
     if(options.showTitle){
       const title = document.createElement('strong');
       title.textContent = "Filter tags & rarity";
       header.appendChild(title);
     }
     const closeBtn = document.createElement('button');
-    closeBtn.className = "closeChecklist";
+    closeBtn.className = "closeChecklist modern-close";
     closeBtn.type = "button";
     closeBtn.textContent = "✕";
     closeBtn.addEventListener('click', hideChecklist);
     header.appendChild(closeBtn);
     panel.appendChild(header);
 
-    // TAGS
+    // Tags
     const tagsSection = document.createElement('div');
     tagsSection.className = "checklist-section";
     const tagLabel = document.createElement('div');
     tagLabel.className = "checklist-subtitle";
+    tagLabel.style.fontSize = "15px"; // sedikit lebih besar
     tagLabel.textContent = "Tags";
     tagsSection.appendChild(tagLabel);
 
@@ -257,11 +182,13 @@
     tagsSection.appendChild(chips);
     panel.appendChild(tagsSection);
 
-    // RARITY - ALWAYS show S..D
+    // Rarity (with extra spacing)
     const raritySection = document.createElement('div');
     raritySection.className = "checklist-section";
     const rarityLabel = document.createElement('div');
     rarityLabel.className = "checklist-subtitle";
+    rarityLabel.style.marginTop = "12px"; // jarak tambahan
+    rarityLabel.style.fontSize = "15px";
     rarityLabel.textContent = "Rarity";
     raritySection.appendChild(rarityLabel);
 
@@ -284,6 +211,7 @@
     raritySection.appendChild(rarityChips);
     panel.appendChild(raritySection);
 
+    // actions
     const actions = document.createElement('div');
     actions.className = "checklist-actions";
     const apply = document.createElement('button');
@@ -341,7 +269,7 @@
       btn.textContent = "Filters";
       btn.addEventListener('click', () => {
         const panel = document.getElementById("checklistPanel");
-        if(panel) hideChecklist(); else showChecklist(catKey, [], [], { showTitle: false }); // hide title in page2
+        if(panel) hideChecklist(); else showChecklist(catKey, [], [], { showTitle: false });
       });
       controls.appendChild(btn);
     }
@@ -359,7 +287,7 @@
     const title = document.getElementById("categoryTitle");
     if(title) title.textContent = data.title || category;
 
-    // inject small logo image next to title (first item image)
+    // small logo next to title
     const logoWrap = document.getElementById("categoryLogoWrap");
     if(logoWrap){
       logoWrap.innerHTML = "";
@@ -462,9 +390,9 @@
     });
   }
 
-  // -------------------------
-  // Page3 - detail with extras slider (center big + only center pop-up)
-  // -------------------------
+  // =========================
+  // PAGE 3: Detail & extras slider (circular)
+  // =========================
   function ensureDetailOverlay(){
     let ov = document.getElementById("detailOverlay");
     if(!ov){
@@ -484,62 +412,68 @@
     if(c){ c.style.position = "relative"; c.style.zIndex = "2"; }
   }
 
-  // create extras slider: extras is array (0..2)
+  // Create circular extras slider (3 images)
   function createExtrasSlider(extras){
-    // wrapper
     const wrap = document.createElement('div');
     wrap.className = 'extras-slider-wrapper';
 
-    // slider container
     const slider = document.createElement('div');
     slider.className = 'extras-slider';
-    // ensure we have 3 slots; fill with FALLBACK if missing
+
+    // ensure 3 items
     const arr = [extras[0]||FALLBACK, extras[1]||FALLBACK, extras[2]||FALLBACK];
-    let activeIndex = 1; // center by default
+    const len = arr.length;
+    let activeIndex = 1; // center item index by default
 
     function render(){
       slider.innerHTML = "";
-      arr.forEach((src, idx) => {
+      const prevIndex = (activeIndex - 1 + len) % len;
+      const nextIndex = (activeIndex + 1) % len;
+
+      // display slides in natural order but mark classes using indices
+      for(let idx=0; idx<len; idx++){
         const slot = document.createElement('div');
         slot.className = 'extras-slide';
         if(idx === activeIndex) slot.classList.add('active');
-        if(idx === activeIndex-1 || idx === activeIndex+1) slot.classList.add('side');
+        if(idx === prevIndex || idx === nextIndex) slot.classList.add('side');
+
         const im = document.createElement('img');
-        im.src = src || FALLBACK;
+        im.src = arr[idx] || FALLBACK;
         im.alt = `extra-${idx+1}`;
         im.loading = "lazy";
-        // only center image opens modal
+
         if(idx === activeIndex){
           im.style.cursor = "pointer";
-          im.addEventListener('click', () => openImageModal(src || FALLBACK));
+          im.addEventListener('click', () => openImageModal(arr[idx] || FALLBACK));
         } else {
-          im.style.cursor = "default";
+          im.style.cursor = "pointer";
+          // clicking side rotates so clicked becomes center
           im.addEventListener('click', () => {
-            // clicking side images will move them to center
             activeIndex = idx;
             render();
           });
         }
         slot.appendChild(im);
         slider.appendChild(slot);
-      });
+      }
     }
 
-    // prev/next controls
+    // prev/next circular
     const prev = document.createElement('button');
     prev.className = 'slider-nav prev-nav';
     prev.type = 'button';
     prev.innerHTML = '&#9664;';
     prev.addEventListener('click', () => {
-      activeIndex = Math.max(0, activeIndex-1);
+      activeIndex = (activeIndex - 1 + len) % len;
       render();
     });
+
     const next = document.createElement('button');
     next.className = 'slider-nav next-nav';
     next.type = 'button';
     next.innerHTML = '&#9654;';
     next.addEventListener('click', () => {
-      activeIndex = Math.min(arr.length-1, activeIndex+1);
+      activeIndex = (activeIndex + 1) % len;
       render();
     });
 
@@ -558,7 +492,6 @@
     const selected = findItemById(id);
     if(!selected){ container.innerHTML = "<div class='card'><h3>Item not found</h3></div>"; return; }
 
-    // find category
     let category = localStorage.getItem("activeCategory") || findCategoryByItemId(id);
     if(!category){
       Object.keys(DATA).some(k => {
@@ -609,6 +542,7 @@
     descP.textContent = selected.desc || "";
     heroOverlay.appendChild(descP);
 
+    // tags: use .tag styling (color per category via --tag-bg)
     const tagWrap = document.createElement('div');
     tagWrap.className = "item-tags";
     (selected.tags||[]).forEach(t => {
@@ -649,7 +583,7 @@
       wrapper.appendChild(storyCard);
     }
 
-    // extras slider (horizontal with center big)
+    // extras slider (circular) - only center opens popup
     const extrasSliderNode = createExtrasSlider(extras);
     wrapper.appendChild(extrasSliderNode);
 
@@ -680,11 +614,11 @@
     if(e.target === modal) closeImageModal();
   });
 
-  // -------------------------
+  // =========================
   // Init bindings
-  // -------------------------
+  // =========================
   document.addEventListener("DOMContentLoaded", function(){
-    // INDEX page: START button binding
+    // START binding for index
     const startBtn = document.getElementById("startBtn");
     const categoryModal = document.getElementById("categoryModal");
     const modalClose = document.getElementById("modalClose");
@@ -708,7 +642,7 @@
       });
     }
 
-    // Items page init
+    // Items page
     if(window.location.pathname.includes("items")){
       const detailFilterRaw = localStorage.getItem("detailFilter");
       if(detailFilterRaw){
@@ -741,7 +675,6 @@
             si2.dataset.checkedRarities = JSON.stringify(preRarities || []);
           }
           setTimeout(() => {
-            // when opening from detail we still hide the checklist title
             showChecklist(localStorage.getItem("activeCategory"), preTags, preRarities, { showTitle: false });
             if(detailFilter.autoApply){
               setTimeout(()=> { applyChecklistFilters(); }, 300);
@@ -763,7 +696,7 @@
     if(modalCloseBtn) modalCloseBtn.onclick = closeImageModal;
   });
 
-  // expose modal funcs globally
+  // expose modal funcs
   window.openImageModal = openImageModal;
   window.closeImageModal = closeImageModal;
 
