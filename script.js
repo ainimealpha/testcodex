@@ -1,5 +1,4 @@
-// script.js - revised for safety (textContent usage), robust parsing, small fixes
-// Keeps original app flow: index.html -> items.html -> detail.html
+// script.js - FULL REVISED (Story rendering fixed + safe DOM insertion + UI helpers)
 (function(){
   'use strict';
 
@@ -7,7 +6,7 @@
   function goHome(){ window.location.href = "index.html"; }
   function goBack(){ window.history.back(); }
 
-  // Category theme mapping (pastel gradients + tag bg)
+  // Category theme mapping
   const CATEGORY_THEME = {
     CHARACTER: { bg: "linear-gradient(180deg,#ffe6e8,#ffd6da)", tagBg: "#ffd6da", accent: "#ff6b6b" },
     AREA:      { bg: "linear-gradient(180deg,#fff2e6,#ffd9b8)", tagBg: "#ffe6c7", accent: "#ff9f43" },
@@ -17,7 +16,7 @@
     DEFAULT:   { bg: "linear-gradient(180deg,#fff9c4,#ffe082)", tagBg: "#fff3cd", accent: "#ffd54f" }
   };
 
-  // Safe fallback for placeholder
+  // Safe fallback placeholder
   const FALLBACK = (typeof PLACEHOLDER !== 'undefined') ? PLACEHOLDER : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'%3E%3Crect width='100%25' height='100%25' fill='%23ffe9a8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23333333' font-family='Arial' font-size='24'%3ENo Image%3C/text%3E%3C/svg%3E";
 
   // Find item by id across DATA
@@ -32,7 +31,7 @@
     return found;
   }
 
-  // Apply category visual theme (used on items & detail)
+  // Apply category theme (colors)
   function applyCategoryTheme(catKey){
     const theme = (catKey && CATEGORY_THEME[catKey]) ? CATEGORY_THEME[catKey] : CATEGORY_THEME.DEFAULT;
     document.body.style.background = theme.bg;
@@ -40,7 +39,6 @@
     document.documentElement.style.setProperty('--accent-color', theme.accent);
   }
 
-  // Reset any body background (used before rendering pages)
   function resetBodyBackground(){
     document.body.style.background = "";
     document.body.style.backgroundImage = "";
@@ -55,7 +53,7 @@
   }
 
   /* =========================
-     PAGE 1: categories (safe DOM creation)
+     PAGE 1: categories
   ========================= */
   function renderCategories(){
     resetBodyBackground();
@@ -84,7 +82,6 @@
 
       card.addEventListener('click', () => {
         localStorage.setItem("activeCategory", key);
-        // clear any previous search dataset
         try {
           const si = document.getElementById("searchInput");
           if(si){ delete si.dataset.checkedTags; si.value = ""; }
@@ -98,7 +95,7 @@
   }
 
   /* =========================
-     PAGE 2: items + filters (safe DOM creation)
+     PAGE 2: items + filters
   ========================= */
   function uniqueTagsForCategory(catKey){
     if(!DATA[catKey]) return [];
@@ -274,7 +271,7 @@
   }
 
   /* =========================
-     PAGE 3: detail (safe DOM creation)
+     PAGE 3: detail (safe DOM creation + story)
   ========================= */
   function ensureDetailOverlay(){
     let ov = document.getElementById("detailOverlay");
@@ -316,7 +313,6 @@
     // MAIN wallpaper fixed to selected.images.main (if present)
     const wallpaperUrl = (selected.images && selected.images.main) ? selected.images.main : null;
     if(wallpaperUrl){
-      // use safe quoting for url
       document.body.style.backgroundImage = `url("${wallpaperUrl}")`;
       document.body.style.backgroundSize = "cover";
       document.body.style.backgroundPosition = "center";
@@ -372,6 +368,22 @@
     heroCard.appendChild(heroOverlay);
     wrapper.appendChild(heroCard);
 
+    // ===== STORY SECTION =====
+    if(selected.story && String(selected.story).trim().length > 0){
+      const storyCard = document.createElement('div');
+      storyCard.className = 'story-card';
+
+      const storyTitle = document.createElement('h3');
+      storyTitle.textContent = 'Story';
+      storyCard.appendChild(storyTitle);
+
+      const storyText = document.createElement('p');
+      storyText.textContent = selected.story;
+      storyCard.appendChild(storyText);
+
+      wrapper.appendChild(storyCard);
+    }
+
     // extras
     const extrasWrap = document.createElement('div');
     extrasWrap.className = "extras";
@@ -421,7 +433,6 @@
 
   // Document init
   document.addEventListener("DOMContentLoaded", function(){
-    // Always render categories for index page; other pages ignore if container missing
     renderCategories();
 
     if(window.location.pathname.includes("items")){
@@ -444,9 +455,10 @@
     if(modalClose) modalClose.onclick = closeImageModal;
   });
 
-  // expose simple helpers to global for inline onclick in HTML (goHome/goBack)
+  // expose helpers for inline use
   window.goHome = goHome;
   window.goBack = goBack;
   window.openImageModal = openImageModal;
   window.closeImageModal = closeImageModal;
+
 })();
