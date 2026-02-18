@@ -1,8 +1,8 @@
-/* style.css — revised and tuned (full file) */
+/* style.css — revised for requested UI updates + rarity + start button + checklist theming */
 *{box-sizing:border-box;}
 html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Roboto,system-ui,-apple-system,"Helvetica Neue",Arial;}
 body{
-  background: linear-gradient(180deg,#fff9c4,#ffe082);
+  background: linear-gradient(180deg,#f6f0ff,#e6f7ff); /* dreamy fantasy base for page 1 */
   color:#222;
   -webkit-font-smoothing:antialiased;
 }
@@ -16,29 +16,41 @@ body{
 /* container and header */
 .container{max-width:1100px;width:100%;margin:0 auto;padding:12px;position:relative;z-index:5;}
 .header{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:10px;}
-.logo{font-weight:800;font-size:18px;}
+.header-centered{flex-direction:column;align-items:center;gap:6px;}
+.logo{
+  font-weight:900;
+  font-size:48px; /* super besar */
+  letter-spacing:2px;
+  text-align:center;
+  margin:6px 0;
+  font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif; /* decorative/semi-decorative fallback */
+  text-transform:uppercase;
+  color: #4b2673;
+  text-shadow: 0 6px 20px rgba(75,38,115,0.12);
+}
 .subtitle{color:#444;margin:4px 0 0 0;font-size:13px;}
+.subtitle-centered{text-align:center;}
 .title{margin:0;font-size:16px;}
 
-/* ========== Home (index) special styles ========== */
-.home-container{text-align:center;}
-.home-header{margin-top:30px;}
-.big-logo{
-  font-size:64px;
+/* season hero text */
+.hero-text{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.season-line{font-weight:800;font-size:14px;letter-spacing:1px;color:#2d1450;}
+.arc-line{font-weight:600;font-size:13px;color:#3b1b66;opacity:0.95;}
+
+/* start button */
+.start-wrap{display:flex;justify-content:center;margin:22px 0;}
+.start-btn{
+  background:linear-gradient(135deg,#8ad7ff,#cfa6ff);
+  border:none;
+  padding:18px 36px;
+  border-radius:18px;
   font-weight:900;
-  text-align:center;
-  letter-spacing:6px;
-  background:linear-gradient(90deg,#ffd6fb,#c9d6ff,#ffffff);
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
+  font-size:20px;
+  cursor:pointer;
+  box-shadow: 0 18px 40px rgba(70,20,120,0.18);
+  color:white;
+  letter-spacing:2px;
 }
-.home-mid-text{
-  margin:40px 0 80px 0; /* provide generous spacing below the grid */
-  text-align:center;
-}
-.season-title{margin:0;font-size:20px;font-weight:800;color:#fff;}
-.season-sub{margin:6px 0 0 0;color:#f0e6ff;}
-.centered-subtitle{margin-top:18px;color:#f2f2ff;}
 
 /* nav buttons */
 .nav-btn{background:#fff;border:none;padding:8px 12px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06);cursor:pointer;font-weight:700;}
@@ -48,16 +60,17 @@ body{
 input[type="search"], .search-box{flex:1;padding:10px;border-radius:12px;border:none;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,0.06);}
 
 /* checklist toggle button (modern) */
-.checklist-toggle{display:inline-block;padding:8px;border-radius:10px;border:none;background:var(--accent-color);cursor:pointer;font-weight:800;}
+.checklist-toggle{display:inline-block;padding:8px;border-radius:10px;border:none;background:#ffcf50;cursor:pointer;font-weight:800;}
 
-/* grid cards */
+/* grid cards — compact square layout
+   Mobile-first: 4 columns (very compact), then 5 cols at >=420px, then 6+ at desktop */
 .grid{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+  grid-template-columns:repeat(4,1fr); /* mobile: 4 columns as requested */
   gap:8px;
 }
 @media(min-width:420px){
-  .grid{grid-template-columns:repeat(5,1fr);}
+  .grid{grid-template-columns:repeat(5,1fr);} /* slightly wider: 5 columns */
 }
 @media(min-width:900px){
   .grid{grid-template-columns:repeat(6,1fr);}
@@ -105,7 +118,7 @@ input[type="search"], .search-box{flex:1;padding:10px;border-radius:12px;border:
 
 /* tags (category badges) use CSS variable for background */
 .item-tags{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;}
-.tag{background:var(--tag-bg);padding:6px 8px;border-radius:999px;font-weight:800;font-size:11px;box-shadow:0 6px 18px rgba(0,0,0,0.06);color:#222;cursor:pointer;}
+.tag{background:var(--tag-bg);padding:6px 8px;border-radius:999px;font-weight:800;font-size:11px;box-shadow:0 6px 18px rgba(0,0,0,0.06);color:#222;}
 
 /* extras */
 .extras{display:flex;gap:8px;justify-content:flex-start;flex-wrap:wrap;margin-top:6px;}
@@ -113,18 +126,14 @@ input[type="search"], .search-box{flex:1;padding:10px;border-radius:12px;border:
 .extra-thumb img{width:100%;height:72px;object-fit:cover;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.08);}
 
 /* modern checklist / chips */
-/* NOTE: checklist panel background is set dynamically in JS (tinted using accent color) */
-.checklist-panel{border-radius:12px;padding:10px;margin-bottom:12px;box-shadow:0 10px 30px rgba(0,0,0,0.08);}
-/* fallback background */
-.checklist-panel{background:linear-gradient(180deg,#fffef6,#fff9e6);}
-
+.checklist-panel{background:linear-gradient(180deg,rgba(255,255,255,0.95),rgba(255,255,255,0.98));border-radius:12px;padding:10px;margin-bottom:12px;box-shadow:0 10px 30px rgba(0,0,0,0.08);}
 .checklist-header{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:8px;}
+.checklist-subtitle{font-weight:700;margin-bottom:6px;}
 .checklist-chips{display:flex;gap:8px;flex-wrap:wrap;}
 .chip{display:inline-flex;align-items:center;cursor:pointer;border-radius:999px;padding:0;margin:0;}
 .chip input{display:none;}
 .chip span{
-  display:inline-block;padding:8px 12px;border-radius:999px;background:var(--tag-bg);font-weight:700;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,0.04);
-  color:#111;
+  display:inline-block;padding:8px 12px;border-radius:999px;background:var(--tag-bg);border:1px solid rgba(0,0,0,0.04);font-weight:700;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,0.04);
 }
 .chip input:checked + span{
   background:var(--accent-color);color:#fff;border-color:rgba(0,0,0,0.06);box-shadow:0 10px 30px rgba(0,0,0,0.08);
@@ -132,6 +141,45 @@ input[type="search"], .search-box{flex:1;padding:10px;border-radius:12px;border:
 .checklist-empty{color:#777;padding:6px 0;}
 .checklist-actions{display:flex;justify-content:flex-end;margin-top:10px;}
 .apply-btn{background:var(--accent-color);color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.08);}
+
+/* rarity badge on item thumbnails (top-right) */
+.thumb-wrap{position:relative;}
+.rarity-badge{
+  position:absolute;
+  top:8px;
+  right:8px;
+  background:linear-gradient(90deg,#222,#444);
+  color:white;
+  padding:6px 8px;
+  border-radius:8px;
+  font-weight:900;
+  font-size:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.18);
+  z-index:3;
+}
+
+/* image overlay tags (bottom-left) */
+.img-overlay-tags{
+  position:absolute;
+  left:8px;
+  bottom:8px;
+  display:flex;
+  gap:6px;
+  z-index:3;
+}
+.overlay-tag{
+  background:rgba(0,0,0,0.6);
+  color:white;
+  padding:4px 8px;
+  border-radius:999px;
+  font-weight:800;
+  font-size:10px;
+}
+
+/* small category logo next to category title */
+.items-header{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.title-wrap{display:flex;align-items:center;gap:12px;}
+.category-small-logo{width:48px;height:48px;object-fit:cover;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);}
 
 /* modal */
 .img-modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:18px;}
@@ -161,7 +209,10 @@ input[type="search"], .search-box{flex:1;padding:10px;border-radius:12px;border:
   box-shadow:0 10px 30px rgba(0,0,0,0.12);
 }
 
-/* story */
+/* back button style for general usage */
+.backBtn{width:100%;margin-top:10px;padding:10px;border:none;border-radius:12px;background:#333;color:white;font-size:14px;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,0.18);}
+
+/* STORY SECTION */
 .story-card{
   background:linear-gradient(180deg,#ffffff,#fffef6);
   border-radius:12px;
@@ -171,15 +222,28 @@ input[type="search"], .search-box{flex:1;padding:10px;border-radius:12px;border:
 .story-card h3{margin:0 0 8px 0;font-size:16px;}
 .story-card p{margin:0;font-size:13px;line-height:1.6;color:#444;}
 
+/* detail rarity (overlay inside hero overlay) */
+.detail-rarity-badge{
+  position:absolute;
+  top:12px;
+  right:12px;
+  background:rgba(20,20,20,0.85);
+  color:white;
+  padding:6px 10px;
+  border-radius:10px;
+  font-weight:900;
+  z-index:8;
+}
+
+/* helper hidden class */
+.hidden{display:none !important;}
+
 /* small screens adjustments */
 @media(max-width:480px){
   .hero-img{height:180px;}
   .card img{height:64px;}
   .extra-thumb img{height:60px;}
   .controls{flex-direction:column;gap:8px;}
+  .category-small-logo{width:40px;height:40px;}
+  .logo{font-size:34px;}
 }
-
-/* items header: small logo to the right of category title */
-.items-header{display:flex;align-items:center;justify-content:space-between;}
-.category-title-wrap{display:flex;align-items:center;gap:10px;}
-.category-logo{width:40px;height:40px;border-radius:8px;object-fit:cover;}
