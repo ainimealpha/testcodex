@@ -1,132 +1,76 @@
-// script.js
-// Cleaned, reformatted, and double-checked
-(function () {
+// script.js - REVISED (adds: detail->items tag gimmick, rarity filter, start button logic, items header logo, fixed back behavior)
+(function(){
   'use strict';
 
-  /* -------------------------
-     Helpers: navigation + page checks
-  ------------------------- */
-  function goHome() {
-    window.location.href = 'index.html';
-  }
+  // Navigation helpers
+  function goHome(){ window.location.href = "index.html"; }
+  function goBack(){ window.history.back(); }
+  function goBackToHome(){ window.location.href = "index.html"; }
 
-  // Items page must always go to index.html (per spec)
-  function goBack() {
-    try {
-      if (isItemsPage()) window.location.href = 'index.html';
-      else window.history.back();
-    } catch (e) {
-      window.location.href = 'index.html';
-    }
-  }
-
-  function isIndexPage() {
-    const p = window.location.pathname || '';
-    return /(^\/?$)|index\.html$/i.test(p);
-  }
-  function isItemsPage() {
-    const p = window.location.pathname || '';
-    return /items\.html$/i.test(p);
-  }
-  function isDetailPage() {
-    const p = window.location.pathname || '';
-    return /detail\.html$/i.test(p);
-  }
-
-  /* -------------------------
-     Themes & fallbacks
-  ------------------------- */
+  // Category theme mapping
   const CATEGORY_THEME = {
-    CHARACTER: { bg: 'linear-gradient(180deg,#ffe6e8,#ffd6da)', tagBg: '#ffd6da', accent: '#ff6b6b' },
-    AREA: { bg: 'linear-gradient(180deg,#fff2e6,#ffd9b8)', tagBg: '#ffe4c7', accent: '#ff9f43' },
-    PET: { bg: 'linear-gradient(180deg,#fffbe6,#fff4b2)', tagBg: '#fff5b2', accent: '#ffd54f' },
-    MONSTER: { bg: 'linear-gradient(180deg,#f3e8ff,#e8d7ff)', tagBg: '#eadcff', accent: '#9b59b6' },
-    MAGIC: { bg: 'linear-gradient(180deg,#e8f4ff,#d0ecff)', tagBg: '#d6efff', accent: '#4da6ff' },
-    DEFAULT: { bg: 'linear-gradient(180deg,#fff9c4,#ffe082)', tagBg: '#fff3cd', accent: '#ffd54f' }
+    CHARACTER: { bg: "linear-gradient(180deg,#f7eef8,#ffeef6)", tagBg: "#ffd6da", accent: "#ff6b6b" },
+    AREA:      { bg: "linear-gradient(180deg,#fff8f0,#fff0e6)", tagBg: "#ffe6c9", accent: "#ff9f43" },
+    PET:       { bg: "linear-gradient(180deg,#fffdf5,#fff9e6)", tagBg: "#fff5b2", accent: "#ffd54f" },
+    MONSTER:   { bg: "linear-gradient(180deg,#f3e8ff,#e8f0ff)", tagBg: "#eadcff", accent: "#9b59b6" },
+    MAGIC:     { bg: "linear-gradient(180deg,#f0fbff,#e6f7ff)", tagBg: "#d6efff", accent: "#4da6ff" },
+    DEFAULT:   { bg: "linear-gradient(180deg,#fff9c4,#ffe082)", tagBg: "#fff3cd", accent: "#ffd54f" }
   };
 
-  // Index-only dreamy theme
-  const INDEX_THEME = {
-    bg: 'linear-gradient(180deg,#0b1024 0%, #3b1164 40%, #6b2b9b 100%)',
-    tagBg: '#b9a6ff',
-    accent: '#ffd6fb'
-  };
+  // Safe fallback placeholder
+  const FALLBACK = (typeof PLACEHOLDER !== 'undefined') ? PLACEHOLDER : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'%3E%3Crect width='100%25' height='100%25' fill='%23ffe9a8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23333333' font-family='Arial' font-size='24'%3ENo Image%3C/text%3E%3C/svg%3E";
 
-  const FALLBACK = (typeof PLACEHOLDER !== 'undefined' && PLACEHOLDER) ?
-    PLACEHOLDER :
-    'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'1200\' height=\'800\'%3E%3Crect width=\'100%25\' height=\'100%25\' fill=\'%23ffe9a8\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23333333\' font-family=\'Arial\' font-size=\'24\'%3ENo Image%3C/text%3E%3C/svg%3E';
-
-  /* -------------------------
-     DOM theme appliers
-  ------------------------- */
-  function applyCategoryTheme(catKey) {
-    const theme = (catKey && CATEGORY_THEME[catKey]) ? CATEGORY_THEME[catKey] : CATEGORY_THEME.DEFAULT;
-    document.body.style.background = theme.bg;
-    document.documentElement.style.setProperty('--tag-bg', theme.tagBg);
-    document.documentElement.style.setProperty('--accent-color', theme.accent);
-  }
-
-  function applyIndexTheme() {
-    document.body.style.background = INDEX_THEME.bg;
-    document.documentElement.style.setProperty('--tag-bg', INDEX_THEME.tagBg);
-    document.documentElement.style.setProperty('--accent-color', INDEX_THEME.accent);
-  }
-
-  function resetBodyBackground() {
-    document.body.style.background = '';
-    document.body.style.backgroundImage = '';
-    document.body.style.backgroundSize = '';
-    document.body.style.backgroundPosition = '';
-    document.body.style.backgroundRepeat = '';
-    document.body.style.backgroundAttachment = '';
-    const ov = document.getElementById('detailOverlay');
-    if (ov) ov.remove();
-    const c = document.querySelector('.container');
-    if (c) { c.style.position = ''; c.style.zIndex = ''; }
-  }
-
-  /* -------------------------
-     Data helpers
-  ------------------------- */
-  function findItemById(id) {
+  // Find item by id across DATA
+  function findItemById(id){
     let found = null;
     Object.keys(DATA).some(catKey => {
       return DATA[catKey].items.some(it => {
-        if (String(it.id) === String(id)) { found = it; return true; }
+        if(String(it.id) === String(id)){ found = it; return true; }
         return false;
       });
     });
     return found;
   }
 
-  function uniqueTagsForCategory(catKey) {
-    if (!DATA[catKey]) return [];
-    const s = new Set();
-    DATA[catKey].items.forEach(it => (it.tags || []).forEach(t => s.add(t)));
-    return Array.from(s);
+  // Find category key by item id
+  function findCategoryByItemId(id){
+    let foundKey = null;
+    Object.keys(DATA).some(catKey => {
+      if(DATA[catKey].items.some(it => String(it.id) === String(id))){ foundKey = catKey; return true; }
+      return false;
+    });
+    return foundKey;
   }
 
-  // Accepts hex like "#rrggbb" or "#rgb". Returns rgba string with alpha.
-  function hexToRgba(hex, alpha) {
-    if (!hex || hex[0] !== '#') return `rgba(0,0,0,${alpha})`;
-    let h = hex.replace('#', '');
-    if (h.length === 3) h = h.split('').map(ch => ch + ch).join('');
-    const r = parseInt(h.substr(0, 2), 16);
-    const g = parseInt(h.substr(2, 2), 16);
-    const b = parseInt(h.substr(4, 2), 16);
-    return `rgba(${r},${g},${b},${alpha})`;
+  // Apply category theme (colors)
+  function applyCategoryTheme(catKey){
+    const theme = (catKey && CATEGORY_THEME[catKey]) ? CATEGORY_THEME[catKey] : CATEGORY_THEME.DEFAULT;
+    document.body.style.background = theme.bg;
+    document.documentElement.style.setProperty('--tag-bg', theme.tagBg);
+    document.documentElement.style.setProperty('--accent-color', theme.accent);
   }
 
-  /* -------------------------
-     PAGE 1: render categories
-  ------------------------- */
-  function renderCategories() {
+  function resetBodyBackground(){
+    document.body.style.background = "";
+    document.body.style.backgroundImage = "";
+    document.body.style.backgroundSize = "";
+    document.body.style.backgroundPosition = "";
+    document.body.style.backgroundRepeat = "";
+    document.body.style.backgroundAttachment = "";
+    const ov = document.getElementById("detailOverlay");
+    if(ov) ov.remove();
+    const c = document.querySelector(".container");
+    if(c){ c.style.position = ""; c.style.zIndex = ""; }
+  }
+
+  /* =========================
+     PAGE 1: categories + START button
+  ========================= */
+  function renderCategories(){
     resetBodyBackground();
-    applyIndexTheme();
-
-    const container = document.getElementById('categoryContainer');
-    if (!container) return;
-    container.innerHTML = '';
+    const container = document.getElementById("categoryContainer");
+    if(!container) return;
+    container.innerHTML = "";
 
     Object.keys(DATA).forEach(key => {
       const cat = DATA[key];
@@ -134,75 +78,100 @@
       const thumb = (firstItem && firstItem.images && firstItem.images.main) ? firstItem.images.main : FALLBACK;
 
       const card = document.createElement('div');
-      card.className = 'card cat-card small-card';
+      card.className = "card cat-card small-card";
       card.tabIndex = 0;
 
+      // image wrapper so tags/rarity overlay possible later if needed
+      const imgWrap = document.createElement('div');
+      imgWrap.className = "card-imgwrap";
       const img = document.createElement('img');
       img.src = thumb;
       img.alt = `${cat.title} preview`;
-      img.loading = 'lazy';
-      card.appendChild(img);
+      img.loading = "lazy";
+      imgWrap.appendChild(img);
+      card.appendChild(imgWrap);
 
       const h3 = document.createElement('h3');
       h3.textContent = cat.title || key;
       card.appendChild(h3);
 
       card.addEventListener('click', () => {
-        localStorage.setItem('activeCategory', key);
-        localStorage.removeItem('autoFilterTag'); // clear residual
-        window.location.href = 'items.html';
+        localStorage.setItem("activeCategory", key);
+        try {
+          const si = document.getElementById("searchInput");
+          if(si){ delete si.dataset.checkedTags; si.value = ""; }
+        } catch(e){}
+        window.location.href = "items.html";
       });
-
-      card.addEventListener('keypress', (e) => { if (e.key === 'Enter') card.click(); });
+      card.addEventListener('keypress', (e) => { if(e.key === "Enter") card.click(); });
 
       container.appendChild(card);
     });
   }
 
-  /* -------------------------
-     PAGE 2: checklist + render items
-  ------------------------- */
-  function showChecklist(catKey) {
+  /* =========================
+     PAGE 2: items + filters (tags + rarity)
+  ========================= */
+  function uniqueTagsForCategory(catKey){
+    if(!DATA[catKey]) return [];
+    const s = new Set();
+    DATA[catKey].items.forEach(it => (it.tags||[]).forEach(t => s.add(t)));
+    return Array.from(s);
+  }
+
+  function uniqueRaritiesForCategory(catKey){
+    if(!DATA[catKey]) return [];
+    const s = new Set();
+    DATA[catKey].items.forEach(it => { if(it.rarity) s.add(it.rarity); });
+    // ensure sorted S,A,B,C,D order when present
+    const order = ["S","A","B","C","D"];
+    return Array.from(s).sort((a,b) => order.indexOf(a) - order.indexOf(b));
+  }
+
+  // showChecklist accepts optional preselected arrays
+  function showChecklist(catKey, preSelectedTags = [], preSelectedRarities = []){
     hideChecklist();
-
     const panel = document.createElement('div');
-    panel.id = 'checklistPanel';
-    panel.className = 'checklist-panel';
+    panel.id = "checklistPanel";
+    panel.className = "checklist-panel";
 
-    // tint using category accent for mild contrast
-    const theme = (catKey && CATEGORY_THEME[catKey]) ? CATEGORY_THEME[catKey] : CATEGORY_THEME.DEFAULT;
-    panel.style.background = hexToRgba(theme.accent || '#000000', 0.12);
-
-    // header
     const header = document.createElement('div');
-    header.className = 'checklist-header';
+    header.className = "checklist-header";
     const title = document.createElement('strong');
-    title.textContent = 'Filter tags';
+    title.textContent = "Filter tags & rarity";
     header.appendChild(title);
     const closeBtn = document.createElement('button');
-    closeBtn.className = 'closeChecklist';
-    closeBtn.type = 'button';
-    closeBtn.textContent = '✕';
+    closeBtn.className = "closeChecklist";
+    closeBtn.type = "button";
+    closeBtn.textContent = "✕";
     closeBtn.addEventListener('click', hideChecklist);
     header.appendChild(closeBtn);
     panel.appendChild(header);
 
-    // chips
+    // TAGS section
+    const tagsSection = document.createElement('div');
+    tagsSection.className = "checklist-section";
+    const tagLabel = document.createElement('div');
+    tagLabel.className = "checklist-subtitle";
+    tagLabel.textContent = "Tags";
+    tagsSection.appendChild(tagLabel);
+
     const chips = document.createElement('div');
-    chips.className = 'checklist-chips';
+    chips.className = "checklist-chips";
     const tags = uniqueTagsForCategory(catKey);
-    if (tags.length === 0) {
+    if(tags.length === 0){
       const no = document.createElement('div');
-      no.className = 'checklist-empty';
-      no.textContent = 'No tags';
+      no.className = "checklist-empty";
+      no.textContent = "No tags";
       chips.appendChild(no);
     } else {
       tags.forEach(t => {
         const label = document.createElement('label');
-        label.className = 'chip';
+        label.className = "chip";
         const input = document.createElement('input');
-        input.type = 'checkbox';
+        input.type = "checkbox";
         input.value = t;
+        if(preSelectedTags && preSelectedTags.includes(t)) input.checked = true;
         const span = document.createElement('span');
         span.textContent = t;
         label.appendChild(input);
@@ -210,223 +179,274 @@
         chips.appendChild(label);
       });
     }
-    panel.appendChild(chips);
+    tagsSection.appendChild(chips);
+    panel.appendChild(tagsSection);
 
-    // actions
+    // RARITY section
+    const rarities = uniqueRaritiesForCategory(catKey);
+    const raritySection = document.createElement('div');
+    raritySection.className = "checklist-section";
+    const rarityLabel = document.createElement('div');
+    rarityLabel.className = "checklist-subtitle";
+    rarityLabel.textContent = "Rarity";
+    raritySection.appendChild(rarityLabel);
+
+    const rarityChips = document.createElement('div');
+    rarityChips.className = "checklist-chips";
+    // default order
+    const order = ["S","A","B","C","D"];
+    const avail = rarities.length ? rarities : order;
+    avail.forEach(r => {
+      const rx = document.createElement('label');
+      rx.className = "chip";
+      const input = document.createElement('input');
+      input.type = "checkbox";
+      input.value = r;
+      if(preSelectedRarities && preSelectedRarities.includes(r)) input.checked = true;
+      const span = document.createElement('span');
+      span.textContent = r;
+      rx.appendChild(input);
+      rx.appendChild(span);
+      rarityChips.appendChild(rx);
+    });
+    raritySection.appendChild(rarityChips);
+    panel.appendChild(raritySection);
+
     const actions = document.createElement('div');
-    actions.className = 'checklist-actions';
+    actions.className = "checklist-actions";
     const apply = document.createElement('button');
-    apply.type = 'button';
-    apply.className = 'apply-btn';
-    apply.textContent = 'Apply';
+    apply.type = "button";
+    apply.className = "apply-btn";
+    apply.textContent = "Apply";
     apply.addEventListener('click', applyChecklistFilters);
     actions.appendChild(apply);
     panel.appendChild(actions);
 
-    const container = document.querySelector('.container');
-    const itemsNode = document.getElementById('itemsContainer');
-    if (container) {
-      if (itemsNode) container.insertBefore(panel, itemsNode);
+    const container = document.querySelector(".container");
+    const itemsNode = document.getElementById("itemsContainer");
+    if(container){
+      if(itemsNode) container.insertBefore(panel, itemsNode);
       else container.appendChild(panel);
+      // focus apply button for accessibility
+      apply.focus();
     }
   }
 
-  function hideChecklist() {
-    const panel = document.getElementById('checklistPanel');
-    if (panel) panel.remove();
+  function hideChecklist(){
+    const panel = document.getElementById("checklistPanel");
+    if(panel) panel.remove();
   }
 
-  function applyChecklistFilters() {
-    const panel = document.getElementById('checklistPanel');
-    if (!panel) {
-      renderItems();
-      return;
-    }
-    const checked = Array.from(panel.querySelectorAll('input[type="checkbox"]:checked')).map(i => i.value);
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-      searchInput.dataset.checkedTags = JSON.stringify(checked);
+  function applyChecklistFilters(){
+    const panel = document.getElementById("checklistPanel");
+    if(!panel) return;
+    const checkedTags = Array.from(panel.querySelectorAll('input[type="checkbox"]'))
+      .filter(i => i.parentElement && i.parentElement.parentElement && i.parentElement.parentElement.previousSibling && i.parentElement.parentElement.previousSibling.textContent === "Tags" ? i.checked : false)
+      .map(i => i.value);
+    // above approach complicated; simpler:
+    const allChips = Array.from(panel.querySelectorAll('.chip input'));
+    const tagsChecked = [];
+    const rarityChecked = [];
+    allChips.forEach(inp => {
+      const txt = inp.nextSibling ? inp.nextSibling.textContent : "";
+      if(inp.checked){
+        // decide if it's a rarity chip by checking value in S/A/B/C/D
+        if(["S","A","B","C","D"].includes(inp.value)) rarityChecked.push(inp.value);
+        else tagsChecked.push(inp.value);
+      }
+    });
+
+    const searchInput = document.getElementById("searchInput");
+    if(searchInput) {
+      searchInput.dataset.checkedTags = JSON.stringify(tagsChecked);
+      searchInput.dataset.checkedRarities = JSON.stringify(rarityChecked);
     }
     hideChecklist();
     renderItems();
   }
 
-  function manageChecklistToggle(catKey) {
-    const controls = document.querySelector('.controls');
-    if (!controls) return;
-
-    let btn = document.getElementById('checklistToggleBtn');
-    if (!btn) {
-      btn = document.createElement('button');
-      btn.id = 'checklistToggleBtn';
-      btn.className = 'checklist-toggle nav-btn';
-      btn.type = 'button';
-      btn.textContent = 'Filters';
+  function manageChecklistToggle(catKey){
+    const controls = document.querySelector(".controls");
+    if(!controls) return;
+    let btn = document.getElementById("checklistToggleBtn");
+    if(!btn){
+      btn = document.createElement("button");
+      btn.id = "checklistToggleBtn";
+      btn.className = "checklist-toggle nav-btn";
+      btn.type = "button";
+      btn.textContent = "Filters";
       btn.addEventListener('click', () => {
-        const panel = document.getElementById('checklistPanel');
-        if (panel) hideChecklist();
-        else showChecklist(catKey);
+        const panel = document.getElementById("checklistPanel");
+        if(panel) hideChecklist(); else showChecklist(catKey);
       });
       controls.appendChild(btn);
     }
-    const si = document.getElementById('searchInput');
-    if (!si) { btn.style.display = 'none'; return; }
-    btn.style.display = 'inline-block';
+    const si = document.getElementById("searchInput");
+    if(!si){ btn.style.display = "none"; return; }
+    btn.style.display = "inline-block";
   }
 
-  function renderItems() {
+  function renderItems(){
     resetBodyBackground();
-
-    const category = localStorage.getItem('activeCategory');
-    if (!category || !DATA[category]) { goHome(); return; }
-
+    const category = localStorage.getItem("activeCategory");
+    if(!category || !DATA[category]) { goHome(); return; }
     applyCategoryTheme(category);
+
     const data = DATA[category];
+    const title = document.getElementById("categoryTitle");
+    if(title) title.textContent = data.title || category;
 
-    // title + small logo
-    const title = document.getElementById('categoryTitle');
-    if (title) title.textContent = data.title || category;
-
-    const logo = document.getElementById('categoryLogo');
-    if (logo) {
+    // inject small logo image next to title (first item image)
+    const logoWrap = document.getElementById("categoryLogoWrap");
+    if(logoWrap){
+      logoWrap.innerHTML = "";
       const firstItem = (data.items && data.items[0]) ? data.items[0] : null;
-      logo.src = (firstItem && firstItem.images && firstItem.images.main) ? firstItem.images.main : FALLBACK;
-      logo.alt = (data.title || category) + ' logo';
+      const logoUrl = (firstItem && firstItem.images && firstItem.images.main) ? firstItem.images.main : FALLBACK;
+      const logoImg = document.createElement('img');
+      logoImg.src = logoUrl;
+      logoImg.alt = `${data.title} logo`;
+      logoImg.className = "category-small-logo";
+      logoWrap.appendChild(logoImg);
     }
 
-    // search and checked tags from dataset
-    const searchInput = document.getElementById('searchInput');
-    const search = searchInput ? (searchInput.value || '').toLowerCase() : '';
+    const searchInput = document.getElementById("searchInput");
+    const search = searchInput ? (searchInput.value || "").toLowerCase() : "";
     let checkedTags = [];
-    if (searchInput && searchInput.dataset.checkedTags) {
+    let checkedRarities = [];
+    if(searchInput && searchInput.dataset.checkedTags){
       try { checkedTags = JSON.parse(searchInput.dataset.checkedTags) || []; }
-      catch (e) { checkedTags = []; }
+      catch(e){ checkedTags = []; }
+    }
+    if(searchInput && searchInput.dataset.checkedRarities){
+      try { checkedRarities = JSON.parse(searchInput.dataset.checkedRarities) || []; }
+      catch(e){ checkedRarities = []; }
     }
 
-    // If detail page set autoFilterTag, show checklist, pre-check and apply (so the UI briefly shows filters then hides)
-    const autoTag = localStorage.getItem('autoFilterTag');
-    if (autoTag && searchInput) {
-      // open panel, pre-check the matching input and apply
-      showChecklist(category);
-      const panel = document.getElementById('checklistPanel');
-      if (panel) {
-        const input = panel.querySelector(`input[type="checkbox"][value="${autoTag}"]`);
-        if (input) input.checked = true;
-        applyChecklistFilters(); // this hides panel and triggers renderItems again
-        localStorage.removeItem('autoFilterTag');
-        return; // render will be executed by applyChecklistFilters
-      } else {
-        // fallback: set dataset directly if panel wasn't created for some reason
-        searchInput.dataset.checkedTags = JSON.stringify([autoTag]);
-        localStorage.removeItem('autoFilterTag');
-        checkedTags = [autoTag];
-      }
+    let items = (data.items||[]).filter(it => (it.name||"").toLowerCase().includes(search) || (it.desc||"").toLowerCase().includes(search));
+    if(checkedTags.length > 0){
+      items = items.filter(it => (it.tags||[]).some(t => checkedTags.includes(t)));
+    }
+    if(checkedRarities.length > 0){
+      items = items.filter(it => checkedRarities.includes(it.rarity));
     }
 
-    // filter items by search and tags
-    let items = (data.items || []).filter(it => (it.name || '').toLowerCase().includes(search));
-    if (checkedTags.length > 0) {
-      items = items.filter(it => (it.tags || []).some(t => checkedTags.includes(t)));
-    }
-
-    // render grid
-    const container = document.getElementById('itemsContainer');
-    if (!container) return;
-    container.innerHTML = '';
+    const container = document.getElementById("itemsContainer");
+    if(!container) return;
+    container.innerHTML = "";
     manageChecklistToggle(category);
 
-    if (items.length === 0) {
+    if(items.length === 0){
       const card = document.createElement('div');
-      card.className = 'card';
+      card.className = "card";
       const p = document.createElement('p');
-      p.className = 'empty';
-      p.textContent = 'No items match your search.';
+      p.className = "empty";
+      p.textContent = "No items match your search.";
       card.appendChild(p);
       container.appendChild(card);
       return;
     }
 
     items.forEach(it => {
-      const div = document.createElement('div');
-      div.className = 'card item-card small-card';
+      const div = document.createElement("div");
+      div.className = "card item-card small-card";
+      div.style.position = "relative"; // for overlays
+
+      const thumbWrap = document.createElement('div');
+      thumbWrap.className = "thumb-wrap";
+      thumbWrap.style.position = "relative";
 
       const thumb = (it.images && it.images.main) ? it.images.main : FALLBACK;
       const img = document.createElement('img');
       img.src = thumb;
-      img.loading = 'lazy';
-      img.alt = it.name || 'item';
-      div.appendChild(img);
+      img.loading = "lazy";
+      img.alt = it.name || "item";
+      thumbWrap.appendChild(img);
+
+      // top-right rarity badge
+      const rarityBadge = document.createElement('span');
+      rarityBadge.className = "rarity-badge";
+      rarityBadge.textContent = it.rarity || "";
+      thumbWrap.appendChild(rarityBadge);
+
+      // tags overlay (bottom-left)
+      const overlayTags = document.createElement('div');
+      overlayTags.className = "img-overlay-tags";
+      (it.tags||[]).slice(0,3).forEach(t => {
+        const tagEl = document.createElement('span');
+        tagEl.className = "overlay-tag";
+        tagEl.textContent = t.toUpperCase();
+        overlayTags.appendChild(tagEl);
+      });
+      thumbWrap.appendChild(overlayTags);
+
+      div.appendChild(thumbWrap);
 
       const h3 = document.createElement('h3');
-      h3.textContent = it.name || '';
+      h3.textContent = it.name || "";
       div.appendChild(h3);
 
       const p = document.createElement('p');
-      p.textContent = it.desc || '';
+      p.textContent = it.desc || "";
       div.appendChild(p);
 
       div.addEventListener('click', () => {
-        localStorage.setItem('selectedId', it.id);
-        localStorage.setItem('activeCategory', category);
-        window.location.href = 'detail.html';
+        localStorage.setItem("selectedId", it.id);
+        localStorage.setItem("activeCategory", category);
+        window.location.href = "detail.html";
       });
 
       container.appendChild(div);
     });
   }
 
-  /* -------------------------
-     PAGE 3: detail
-     - render detail
-     - tag click = set autoFilterTag + redirect to items
-  ------------------------- */
-  function ensureDetailOverlay() {
-    let ov = document.getElementById('detailOverlay');
-    if (!ov) {
-      ov = document.createElement('div');
-      ov.id = 'detailOverlay';
+  /* =========================
+     PAGE 3: detail (safe DOM creation + story + clickable tags gimmick)
+  ========================= */
+  function ensureDetailOverlay(){
+    let ov = document.getElementById("detailOverlay");
+    if(!ov){
+      ov = document.createElement("div");
+      ov.id = "detailOverlay";
       document.body.appendChild(ov);
     }
-    ov.style.position = 'fixed';
-    ov.style.top = '0';
-    ov.style.left = '0';
-    ov.style.right = '0';
-    ov.style.bottom = '0';
-    ov.style.background = 'linear-gradient(to bottom, rgba(255,255,255,0.85), rgba(255,255,255,0.95))';
-    ov.style.pointerEvents = 'none';
-    ov.style.zIndex = '1';
-    const c = document.querySelector('.container');
-    if (c) { c.style.position = 'relative'; c.style.zIndex = '2'; }
+    ov.style.position = "fixed";
+    ov.style.top = "0";
+    ov.style.left = "0";
+    ov.style.right = "0";
+    ov.style.bottom = "0";
+    ov.style.background = "linear-gradient(to bottom, rgba(255,255,255,0.85), rgba(255,255,255,0.95))";
+    ov.style.pointerEvents = "none";
+    ov.style.zIndex = "1";
+    const c = document.querySelector(".container");
+    if(c){ c.style.position = "relative"; c.style.zIndex = "2"; }
   }
 
-  function renderDetail() {
-    const container = document.getElementById('detailContainer');
-    if (!container) return;
-    const id = localStorage.getItem('selectedId');
-    if (!id) { container.innerHTML = "<div class='card'><h3>Item not found</h3></div>"; return; }
-
+  function renderDetail(){
+    const container = document.getElementById("detailContainer");
+    if(!container) return;
+    const id = localStorage.getItem("selectedId");
+    if(!id){ container.innerHTML = "<div class='card'><h3>Item not found</h3></div>"; return; }
     const selected = findItemById(id);
-    if (!selected) { container.innerHTML = "<div class='card'><h3>Item not found</h3></div>"; return; }
+    if(!selected){ container.innerHTML = "<div class='card'><h3>Item not found</h3></div>"; return; }
 
-    // determine category
-    let category = localStorage.getItem('activeCategory') || null;
-    if (!category) {
+    // find category
+    let category = localStorage.getItem("activeCategory") || findCategoryByItemId(id);
+    if(!category){
       Object.keys(DATA).some(k => {
-        if (DATA[k].items.some(it => String(it.id) === String(id))) { category = k; return true; }
+        if(DATA[k].items.some(it => String(it.id) === String(id))){ category = k; return true; }
         return false;
       });
     }
-
     applyCategoryTheme(category);
 
-    // set wallpaper if available
+    // MAIN wallpaper fixed to selected.images.main (if present)
     const wallpaperUrl = (selected.images && selected.images.main) ? selected.images.main : null;
-    if (wallpaperUrl) {
+    if(wallpaperUrl){
       document.body.style.backgroundImage = `url("${wallpaperUrl}")`;
-      document.body.style.backgroundSize = 'cover';
-      document.body.style.backgroundPosition = 'center';
-      document.body.style.backgroundRepeat = 'no-repeat';
-      document.body.style.backgroundAttachment = 'fixed';
+      document.body.style.backgroundSize = "cover";
+      document.body.style.backgroundPosition = "center";
+      document.body.style.backgroundRepeat = "no-repeat";
+      document.body.style.backgroundAttachment = "fixed";
     } else {
       resetBodyBackground();
       applyCategoryTheme(category);
@@ -435,77 +455,92 @@
     ensureDetailOverlay();
 
     const mainImg = (selected.images && selected.images.main) ? selected.images.main : FALLBACK;
-    const extras = (selected.images && Array.isArray(selected.images.extras)) ? selected.images.extras.slice(0, 3) : [];
-    const tags = (selected.tags || []).slice(0, 10);
+    const extras = (selected.images && Array.isArray(selected.images.extras)) ? selected.images.extras.slice(0,3) : [];
+    const tags = (selected.tags || []).slice(0,10);
 
-    container.innerHTML = '';
+    // build detail DOM (safe)
+    container.innerHTML = "";
     const wrapper = document.createElement('div');
-    wrapper.className = 'detail-wrapper';
+    wrapper.className = "detail-wrapper";
 
     const heroCard = document.createElement('div');
-    heroCard.className = 'detail-card hero-card';
+    heroCard.className = "detail-card hero-card";
 
     const heroImg = document.createElement('img');
-    heroImg.className = 'hero-img';
+    heroImg.className = "hero-img";
     heroImg.src = mainImg;
-    heroImg.alt = selected.name || 'hero';
+    heroImg.alt = selected.name || "hero";
     heroCard.appendChild(heroImg);
 
     const heroOverlay = document.createElement('div');
-    heroOverlay.className = 'hero-overlay';
+    heroOverlay.className = "hero-overlay";
 
     const h2 = document.createElement('h2');
-    h2.textContent = selected.name || '';
+    h2.textContent = selected.name || "";
     heroOverlay.appendChild(h2);
 
     const descP = document.createElement('p');
-    descP.className = 'hero-desc';
-    descP.textContent = selected.desc || '';
+    descP.className = "hero-desc";
+    descP.textContent = selected.desc || "";
     heroOverlay.appendChild(descP);
 
     const tagWrap = document.createElement('div');
-    tagWrap.className = 'item-tags';
+    tagWrap.className = "item-tags";
     tags.forEach(t => {
       const sp = document.createElement('span');
-      sp.className = 'tag';
+      sp.className = "tag";
       sp.textContent = String(t).toUpperCase();
-
-      // GIMMICK: click tag -> set autoFilterTag + redirect to items
+      // clickable gimmick: when clicked, go to items page, open filters, apply this tag
+      sp.style.cursor = "pointer";
       sp.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        if (category) localStorage.setItem('activeCategory', category);
-        localStorage.setItem('autoFilterTag', t);
-        window.location.href = 'items.html';
+        // store filter instruction
+        const detailFilter = { tags: [t], rarities: [], category: category, autoApply: true };
+        localStorage.setItem("detailFilter", JSON.stringify(detailFilter));
+        // navigate to items
+        localStorage.setItem("activeCategory", category);
+        window.location.href = "items.html";
       });
-
       tagWrap.appendChild(sp);
     });
     heroOverlay.appendChild(tagWrap);
+
     heroCard.appendChild(heroOverlay);
     wrapper.appendChild(heroCard);
 
-    // story
-    if (selected.story && String(selected.story).trim().length > 0) {
+    // RARITY indicator on detail hero overlay (top-right)
+    if(selected.rarity){
+      const rarityBadgeDetail = document.createElement('div');
+      rarityBadgeDetail.className = "detail-rarity-badge";
+      rarityBadgeDetail.textContent = selected.rarity;
+      heroOverlay.appendChild(rarityBadgeDetail);
+    }
+
+    // ===== STORY SECTION =====
+    if(selected.story && String(selected.story).trim().length > 0){
       const storyCard = document.createElement('div');
       storyCard.className = 'story-card';
+
       const storyTitle = document.createElement('h3');
       storyTitle.textContent = 'Story';
       storyCard.appendChild(storyTitle);
+
       const storyText = document.createElement('p');
       storyText.textContent = selected.story;
       storyCard.appendChild(storyText);
+
       wrapper.appendChild(storyCard);
     }
 
     // extras
     const extrasWrap = document.createElement('div');
-    extrasWrap.className = 'extras';
+    extrasWrap.className = "extras";
     extras.forEach((src, idx) => {
       const ex = document.createElement('div');
-      ex.className = 'extra-thumb';
+      ex.className = "extra-thumb";
       const im = document.createElement('img');
       im.src = src || FALLBACK;
-      im.alt = `extra ${idx + 1}`;
+      im.alt = `extra ${idx+1}`;
       im.addEventListener('click', () => openImageModal(src || FALLBACK));
       ex.appendChild(im);
       extrasWrap.appendChild(ex);
@@ -515,70 +550,121 @@
     container.appendChild(wrapper);
   }
 
-  /* -------------------------
-     Modal helpers
-  ------------------------- */
-  function openImageModal(src) {
-    const modal = document.getElementById('imgModal');
-    const img = document.getElementById('imgModalImg');
-    if (!modal || !img) return;
+  /* Modal preview (extras only) */
+  function openImageModal(src){
+    const modal = document.getElementById("imgModal");
+    const img = document.getElementById("imgModalImg");
+    if(!modal || !img) return;
     img.src = src || FALLBACK;
-    modal.style.display = 'flex';
-    const closeBtn = document.getElementById('modalCloseBtn');
-    if (closeBtn) closeBtn.focus();
-    document.addEventListener('keydown', escModalHandler);
+    modal.style.display = "flex";
+    const closeBtn = document.getElementById("modalCloseBtn");
+    if(closeBtn) closeBtn.focus();
+    document.addEventListener("keydown", escModalHandler);
   }
 
-  function closeImageModal() {
-    const modal = document.getElementById('imgModal');
-    if (modal) modal.style.display = 'none';
-    document.removeEventListener('keydown', escModalHandler);
+  function closeImageModal(){
+    const modal = document.getElementById("imgModal");
+    if(modal) modal.style.display = "none";
+    document.removeEventListener("keydown", escModalHandler);
   }
 
-  function escModalHandler(e) {
-    if (e.key === 'Escape') closeImageModal();
+  function escModalHandler(e){
+    if(e.key === "Escape") closeImageModal();
   }
 
-  // click outside to close modal
-  document.addEventListener('click', function (e) {
-    const modal = document.getElementById('imgModal');
-    if (!modal || modal.style.display !== 'flex') return;
-    if (e.target === modal) closeImageModal();
+  // click outside to close
+  document.addEventListener("click", function(e){
+    const modal = document.getElementById("imgModal");
+    if(!modal || modal.style.display !== "flex") return;
+    if(e.target === modal) closeImageModal();
   });
 
-  /* -------------------------
-     Init: wire up per-page behavior
-  ------------------------- */
-  document.addEventListener('DOMContentLoaded', function () {
-    if (isIndexPage()) {
+  // Document init
+  document.addEventListener("DOMContentLoaded", function(){
+    // INDEX (page 1) logic: show START button; render categories only after START pressed
+    if(window.location.pathname.includes("index") || window.location.pathname === "/" ){
+      const startBtn = document.getElementById("startBtn");
+      const startWrap = document.getElementById("startWrap");
+      const catContainer = document.getElementById("categoryContainer");
+      // style/theme for page 1 (fantasy dreamy)
+      document.body.style.background = "linear-gradient(180deg,#f6f0ff,#e6f7ff)";
+      // center header adjustments handled by CSS
+      if(startBtn){
+        startBtn.addEventListener('click', () => {
+          // hide start and reveal categories
+          if(startWrap) startWrap.style.display = "none";
+          if(catContainer) catContainer.classList.remove("hidden");
+          renderCategories();
+        });
+      }
+      // don't call renderCategories here until START
+    } else {
+      // render categories for other pages if needed (no-op)
       renderCategories();
     }
 
-    if (isItemsPage()) {
-      const si = document.getElementById('searchInput');
-      const activeCategory = localStorage.getItem('activeCategory');
-      if (activeCategory) applyCategoryTheme(activeCategory);
+    if(window.location.pathname.includes("items")){
+      // If navigated from detail with a filter instruction, pick it up
+      const detailFilterRaw = localStorage.getItem("detailFilter");
+      if(detailFilterRaw){
+        try {
+          const detailFilter = JSON.parse(detailFilterRaw);
+          if(detailFilter && detailFilter.category){
+            localStorage.setItem("activeCategory", detailFilter.category);
+          }
+        } catch(e){}
+      }
 
-      if (si) {
-        si.addEventListener('focus', () => manageChecklistToggle(localStorage.getItem('activeCategory')));
-        si.addEventListener('input', () => renderItems());
-        si.addEventListener('blur', () => setTimeout(() => manageChecklistToggle(localStorage.getItem('activeCategory')), 150));
+      const si = document.getElementById("searchInput");
+      const activeCategory = localStorage.getItem("activeCategory");
+      if(activeCategory) applyCategoryTheme(activeCategory);
+
+      if(si){
+        si.addEventListener("focus", () => manageChecklistToggle(localStorage.getItem("activeCategory")));
+        si.addEventListener("input", () => renderItems());
+        si.addEventListener("blur", () => setTimeout(()=>manageChecklistToggle(localStorage.getItem("activeCategory")), 150));
+      }
+
+      // If detailFilter exists, pre-open filters & apply, then remove the instruction
+      if(detailFilterRaw){
+        try {
+          const detailFilter = JSON.parse(detailFilterRaw);
+          const preTags = detailFilter.tags || [];
+          const preRarities = detailFilter.rarities || [];
+          // set dataset on searchInput to hold these before rendering
+          const si2 = document.getElementById("searchInput");
+          if(si2){
+            si2.dataset.checkedTags = JSON.stringify(preTags);
+            si2.dataset.checkedRarities = JSON.stringify(preRarities || []);
+          }
+          // showChecklist with preselected and auto apply after short delay
+          setTimeout(() => {
+            showChecklist(localStorage.getItem("activeCategory"), preTags, preRarities);
+            // auto-apply if requested
+            if(detailFilter.autoApply){
+              setTimeout(()=> { applyChecklistFilters(); }, 300);
+            }
+          }, 200);
+        } catch(e){}
+        // remove instruction so it doesn't persist
+        localStorage.removeItem("detailFilter");
       }
 
       renderItems();
     }
 
-    if (isDetailPage()) {
+    if(window.location.pathname.includes("detail")){
       renderDetail();
     }
 
-    const modalClose = document.getElementById('modalCloseBtn');
-    if (modalClose) modalClose.onclick = closeImageModal;
+    const modalClose = document.getElementById("modalCloseBtn");
+    if(modalClose) modalClose.onclick = closeImageModal;
   });
 
-  // expose a few helpers globally (used by inline buttons)
+  // expose helpers for inline use
   window.goHome = goHome;
   window.goBack = goBack;
+  window.goBackToHome = goBackToHome;
   window.openImageModal = openImageModal;
   window.closeImageModal = closeImageModal;
 
