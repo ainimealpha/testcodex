@@ -14,7 +14,7 @@
       <h1 class="logo">ANIME CODEX</h1>
     </header>
 
-    <!-- START button (very large and modern) - moved slightly lower for better mobile layout -->
+    <!-- START button (very large and modern) - lowered further per request -->
     <div class="start-wrap start-wrap-lowered" id="startWrap">
       <button id="startBtn" class="start-btn start-btn-large" type="button" aria-haspopup="dialog" aria-controls="categoryModal">START</button>
     </div>
@@ -25,11 +25,10 @@
       <div class="arc-line">Adventure Arc</div>
     </div>
     <p class="subtitle subtitle-centered">Tap a card to open the category</p>
-
     <!-- small extra help text under subtitle -->
-    <p class="subtitle-small subtitle-centered">Find your path — choose a category and begin the adventure.</p>
+    <p class="subtitle-small subtitle-centered">Choose a path — pick a category and dive in.</p>
 
-    <!-- START modal: ONLY category grid (NO tags / NO rarity here) -->
+    <!-- START modal: ONLY category grid (NO tags / NO rarity here). Grid 3 columns, no need scroll. -->
     <div id="categoryModal" class="category-modal hidden" role="dialog" aria-modal="true" aria-labelledby="categoryModalTitle">
       <div class="category-modal-content" role="document">
         <div class="modal-header">
@@ -38,8 +37,8 @@
           <button id="modalClose" class="modal-close-btn" aria-label="Close categories">✕</button>
         </div>
 
-        <!-- category grid only -->
-        <div id="categoryGrid" class="grid category-grid" aria-live="polite">
+        <!-- category grid 3 columns -->
+        <div id="categoryGrid" class="category-grid" aria-live="polite">
           <!-- category cards inserted by script -->
         </div>
       </div>
