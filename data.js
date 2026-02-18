@@ -1,6 +1,7 @@
 // data.js — edit this file only to add categories/items
 // KEEP the variable names `PLACEHOLDER` and `DATA` as-is
 // Format per item is consistent: id (string with category prefix), name, desc, tags, images { main, extras[3] }, story (narrative)
+// Added: rarity (one of "S","A","B","C","D")
 
 const PLACEHOLDER = "https://via.placeholder.com/1200x800/ffe9a8/333333?text=No+Image";
 
@@ -13,6 +14,7 @@ const DATA = {
         name: "Ice Queen",
         desc: "Frozen ruler of the north, graceful yet cold.",
         tags: ["ice", "legend"],
+        rarity: "S",
         images: {
           main: "https://via.placeholder.com/1200x800/9ad0ff/04345b?text=Ice+Queen+Main",
           extras: [
@@ -29,6 +31,7 @@ const DATA = {
         name: "Shadow Blade",
         desc: "Stealth assassin from the eastern isles.",
         tags: ["stealth", "assassin"],
+        rarity: "A",
         images: {
           main: "https://via.placeholder.com/1200x800/222831/ffffff?text=Shadow+Blade+Main",
           extras: [
@@ -45,6 +48,7 @@ const DATA = {
         name: "Fire Knight",
         desc: "Blazing frontline tank, fearless and proud.",
         tags: ["fire", "tank"],
+        rarity: "A",
         images: {
           main: "https://via.placeholder.com/1200x800/ff8a65/4e2a1f?text=Fire+Knight+Main",
           extras: [
@@ -61,6 +65,7 @@ const DATA = {
         name: "Wind Archer",
         desc: "Swift sniper who dances on the breeze.",
         tags: ["wind", "ranged"],
+        rarity: "B",
         images: {
           main: "https://via.placeholder.com/1200x800/b2f5ea/013220?text=Wind+Archer+Main",
           extras: [
@@ -77,6 +82,7 @@ const DATA = {
         name: "Holy Priest",
         desc: "Support healer, blessed with sacred light.",
         tags: ["support", "holy"],
+        rarity: "B",
         images: {
           main: "https://via.placeholder.com/1200x800/fff8e1/6b4200?text=Holy+Priest+Main",
           extras: [
@@ -98,6 +104,7 @@ const DATA = {
         name: "Dark Dragon",
         desc: "Ancient beast of shadow and fury.",
         tags: ["dragon", "boss"],
+        rarity: "S",
         images: {
           main: "https://via.placeholder.com/1200x800/6a1b9a/ffffff?text=Dark+Dragon+Main",
           extras: [
@@ -114,6 +121,7 @@ const DATA = {
         name: "Goblin King",
         desc: "Cave ruler.",
         tags: ["goblin"],
+        rarity: "C",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -130,6 +138,7 @@ const DATA = {
         name: "Ice Golem",
         desc: "Frozen tank.",
         tags: ["ice"],
+        rarity: "B",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -146,6 +155,7 @@ const DATA = {
         name: "Fire Demon",
         desc: "Infernal terror.",
         tags: ["fire"],
+        rarity: "A",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -162,6 +172,7 @@ const DATA = {
         name: "Void Reaper",
         desc: "Soul hunter.",
         tags: ["void"],
+        rarity: "S",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -183,6 +194,7 @@ const DATA = {
         name: "Mini Dragon",
         desc: "Tiny fire buddy.",
         tags: ["cute"],
+        rarity: "C",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -199,6 +211,7 @@ const DATA = {
         name: "Snow Fox",
         desc: "Cute frost pet.",
         tags: ["cute", "ice"],
+        rarity: "B",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -215,6 +228,7 @@ const DATA = {
         name: "Thunder Cat",
         desc: "Electric kitty.",
         tags: ["electric"],
+        rarity: "C",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -231,6 +245,7 @@ const DATA = {
         name: "Spirit Wolf",
         desc: "Ghost companion.",
         tags: ["spirit"],
+        rarity: "B",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -247,6 +262,7 @@ const DATA = {
         name: "Fairy Sprite",
         desc: "Magic helper.",
         tags: ["magic"],
+        rarity: "D",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -268,6 +284,7 @@ const DATA = {
         name: "Frozen Kingdom",
         desc: "Land of ice.",
         tags: ["ice", "zone"],
+        rarity: "A",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -284,6 +301,7 @@ const DATA = {
         name: "Dark Forest",
         desc: "Mystic woods.",
         tags: ["forest"],
+        rarity: "B",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -300,6 +318,7 @@ const DATA = {
         name: "Sky City",
         desc: "Floating realm.",
         tags: ["sky"],
+        rarity: "A",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -316,6 +335,7 @@ const DATA = {
         name: "Lava Valley",
         desc: "Burning land.",
         tags: ["lava"],
+        rarity: "C",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -332,6 +352,7 @@ const DATA = {
         name: "Sacred Temple",
         desc: "Ancient shrine.",
         tags: ["holy"],
+        rarity: "B",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -353,6 +374,7 @@ const DATA = {
         name: "Ice Meteor",
         desc: "Frozen blast.",
         tags: ["ice", "aoe"],
+        rarity: "A",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -369,6 +391,7 @@ const DATA = {
         name: "Dark Flame",
         desc: "Cursed fire.",
         tags: ["fire", "dot"],
+        rarity: "B",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -385,6 +408,7 @@ const DATA = {
         name: "Wind Slash",
         desc: "Air blade.",
         tags: ["wind"],
+        rarity: "C",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -401,6 +425,7 @@ const DATA = {
         name: "Holy Light",
         desc: "Sacred beam.",
         tags: ["holy", "single"],
+        rarity: "B",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -417,6 +442,7 @@ const DATA = {
         name: "Thunder Storm",
         desc: "Lightning rain.",
         tags: ["electric", "aoe"],
+        rarity: "A",
         images: {
           main: PLACEHOLDER,
           extras: [
@@ -438,6 +464,7 @@ const DATA = {
 //   name: string
 //   desc: short string for thumbnails
 //   tags: array of strings
+//   rarity: string "S"|"A"|"B"|"C"|"D"
 //   images: { main: string (URL), extras: [ string, string, string ] }
 //   story: long descriptive string (narrative)
 // - When editing images: use full http(s) URLs or valid relative paths.
