@@ -1,5 +1,5 @@
-// script.js - REVISED (index modal gallery for START + robust binding + existing page logic)
-// This file assumes data.js defines DATA and PLACEHOLDER
+// script.js - REVISED: rarity filter always shows S-A-B-C-D, modern back handling (items/detail), and UI glue.
+// Assumes data.js defines DATA and PLACEHOLDER
 (function(){
   'use strict';
 
@@ -8,10 +8,21 @@
   // -------------------------
   const FALLBACK = (typeof PLACEHOLDER !== 'undefined') ? PLACEHOLDER : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'%3E%3Crect width='100%25' height='100%25' fill='%23ffe9a8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23333333' font-family='Arial' font-size='24'%3ENo Image%3C/text%3E%3C/svg%3E";
 
+  // Navigation helpers
   function goHome(){ window.location.href = "index.html"; }
   function goBackToHome(){ window.location.href = "index.html"; }
+  function goToItemsPage(){ 
+    // ensure activeCategory remains set; then go to items page
+    const cat = localStorage.getItem("activeCategory") || '';
+    // nothing complicated: just navigate
+    window.location.href = "items.html";
+  }
 
-  // category theme map (kept from previous revision)
+  // expose to global
+  window.goBackToHome = goBackToHome;
+  window.goToItemsPage = goToItemsPage;
+
+  // Category theme map
   const CATEGORY_THEME = {
     CHARACTER: { bg: "linear-gradient(180deg,#f7eef8,#ffeef6)", tagBg: "#ffd6da", accent: "#ff6b6b" },
     AREA:      { bg: "linear-gradient(180deg,#fff8f0,#fff0e6)", tagBg: "#ffe6c9", accent: "#ff9f43" },
@@ -28,7 +39,7 @@
     document.documentElement.style.setProperty('--accent-color', theme.accent);
   }
 
-  // find item/category helpers
+  // find item by id across DATA
   function findItemById(id){
     let found = null;
     Object.keys(DATA).some(catKey => {
@@ -39,6 +50,7 @@
     });
     return found;
   }
+
   function findCategoryByItemId(id){
     let foundKey = null;
     Object.keys(DATA).some(catKey => {
@@ -48,9 +60,9 @@
     return foundKey;
   }
 
-  // -------------------------
-  // PAGE 1: START button modal gallery
-  // -------------------------
+  // ------------------------
+  // PAGE 1 - category modal triggered by START (kept as before)
+  // ------------------------
   function buildCategoryCard(key){
     const cat = DATA[key];
     const firstItem = (cat && cat.items && cat.items[0]) ? cat.items[0] : null;
@@ -73,10 +85,9 @@
     h3.textContent = cat.title || key;
     card.appendChild(h3);
 
-    // click: set activeCategory and go to items.html
     card.addEventListener('click', () => {
       localStorage.setItem("activeCategory", key);
-      // close modal then navigate
+      // close then navigate
       closeCategoryModal();
       window.location.href = "items.html";
     });
@@ -88,9 +99,8 @@
   function openCategoryModal(){
     const modal = document.getElementById('categoryModal');
     if(!modal) return;
-    // populate grid
     const grid = document.getElementById('categoryGrid');
-    if(grid) {
+    if(grid){
       grid.innerHTML = "";
       Object.keys(DATA).forEach(key => {
         const card = buildCategoryCard(key);
@@ -98,42 +108,39 @@
       });
     }
     modal.classList.remove('hidden');
-    // focus first card
+    document.body.style.overflow = "hidden";
     setTimeout(() => {
       const first = modal.querySelector('.card');
       if(first) first.focus();
-    }, 50);
-    // trap focus lightly (basic)
-    document.body.style.overflow = "hidden";
+    },50);
   }
-
   function closeCategoryModal(){
     const modal = document.getElementById('categoryModal');
     if(!modal) return;
     modal.classList.add('hidden');
     document.body.style.overflow = "";
-    // return focus to start
     const startBtn = document.getElementById('startBtn');
     if(startBtn) startBtn.focus();
   }
 
-  // -------------------------
-  // PAGE 2: items listing (kept compatible w/ previous logic)
-  // -------------------------
+  // ------------------------
+  // PAGE 2 - items + filters
+  // ------------------------
   function uniqueTagsForCategory(catKey){
     if(!DATA[catKey]) return [];
     const s = new Set();
     DATA[catKey].items.forEach(it => (it.tags||[]).forEach(t => s.add(t)));
     return Array.from(s);
   }
+
+  // NOTE: changed — always return full order so filters S..D always shown
   function uniqueRaritiesForCategory(catKey){
-    if(!DATA[catKey]) return [];
-    const s = new Set();
-    DATA[catKey].items.forEach(it => { if(it.rarity) s.add(it.rarity); });
     const order = ["S","A","B","C","D"];
-    return Array.from(s).sort((a,b) => order.indexOf(a) - order.indexOf(b));
+    // Always return full order (UI will show all)
+    return order.slice();
   }
 
+  // checklist: accepts preSelected arrays
   function showChecklist(catKey, preSelectedTags = [], preSelectedRarities = []){
     hideChecklist();
     const panel = document.createElement('div');
@@ -160,6 +167,7 @@
     tagLabel.className = "checklist-subtitle";
     tagLabel.textContent = "Tags";
     tagsSection.appendChild(tagLabel);
+
     const chips = document.createElement('div');
     chips.className = "checklist-chips";
     const tags = uniqueTagsForCategory(catKey);
@@ -186,21 +194,20 @@
     tagsSection.appendChild(chips);
     panel.appendChild(tagsSection);
 
-    // RARITY
-    const rarities = uniqueRaritiesForCategory(catKey);
+    // RARITY - ALWAYS show S..D (modern style)
     const raritySection = document.createElement('div');
     raritySection.className = "checklist-section";
     const rarityLabel = document.createElement('div');
     rarityLabel.className = "checklist-subtitle";
     rarityLabel.textContent = "Rarity";
     raritySection.appendChild(rarityLabel);
+
     const rarityChips = document.createElement('div');
     rarityChips.className = "checklist-chips";
     const order = ["S","A","B","C","D"];
-    const avail = rarities.length ? rarities : order;
-    avail.forEach(r => {
+    order.forEach(r => {
       const rx = document.createElement('label');
-      rx.className = "chip";
+      rx.className = "chip rarity-chip";
       const input = document.createElement('input');
       input.type = "checkbox";
       input.value = r;
@@ -289,6 +296,7 @@
     const title = document.getElementById("categoryTitle");
     if(title) title.textContent = data.title || category;
 
+    // inject small logo image next to title (first item image)
     const logoWrap = document.getElementById("categoryLogoWrap");
     if(logoWrap){
       logoWrap.innerHTML = "";
@@ -354,11 +362,13 @@
       img.alt = it.name || "item";
       thumbWrap.appendChild(img);
 
+      // rarity badge
       const rarityBadge = document.createElement('span');
       rarityBadge.className = "rarity-badge";
       rarityBadge.textContent = it.rarity || "";
       thumbWrap.appendChild(rarityBadge);
 
+      // overlay tags
       const overlayTags = document.createElement('div');
       overlayTags.className = "img-overlay-tags";
       (it.tags||[]).slice(0,3).forEach(t => {
@@ -389,9 +399,9 @@
     });
   }
 
-  // -------------------------
-  // PAGE 3: detail
-  // -------------------------
+  // ------------------------
+  // PAGE 3 - detail view (tags clickable -> open items with filter)
+  // ------------------------
   function ensureDetailOverlay(){
     let ov = document.getElementById("detailOverlay");
     if(!ov){
@@ -419,6 +429,7 @@
     const selected = findItemById(id);
     if(!selected){ container.innerHTML = "<div class='card'><h3>Item not found</h3></div>"; return; }
 
+    // determine category
     let category = localStorage.getItem("activeCategory") || findCategoryByItemId(id);
     if(!category){
       Object.keys(DATA).some(k => {
@@ -527,7 +538,7 @@
     container.appendChild(wrapper);
   }
 
-  // simple image modal
+  // image modal
   function openImageModal(src){
     const modal = document.getElementById("imgModal");
     const img = document.getElementById("imgModalImg");
@@ -551,17 +562,15 @@
     if(e.target === modal) closeImageModal();
   });
 
-  // -------------------------
-  // Initialization on DOMContentLoaded
-  // -------------------------
+  // ------------------------
+  // Init DOMContentLoaded
+  // ------------------------
   document.addEventListener("DOMContentLoaded", function(){
-    // === INDEX PAGE: robust binding for START button ===
+    // INDEX page: bind START robustly if present
     const startBtn = document.getElementById("startBtn");
-    const startWrap = document.getElementById("startWrap");
     const categoryModal = document.getElementById("categoryModal");
     const modalClose = document.getElementById("modalClose");
     if(startBtn){
-      // ensure clickable regardless of path
       startBtn.addEventListener('click', (e) => {
         e.preventDefault();
         openCategoryModal();
@@ -570,20 +579,18 @@
     if(modalClose){
       modalClose.addEventListener('click', closeCategoryModal);
     }
-    // close modal on Escape
     document.addEventListener('keydown', (e) => {
       if(e.key === "Escape"){
         if(categoryModal && !categoryModal.classList.contains('hidden')) closeCategoryModal();
       }
     });
-    // if user clicks outside content area close
     if(categoryModal){
       categoryModal.addEventListener('click', (ev) => {
         if(ev.target === categoryModal) closeCategoryModal();
       });
     }
 
-    // === ITEMS PAGE logic ===
+    // Items page initialization
     if(window.location.pathname.includes("items")){
       const detailFilterRaw = localStorage.getItem("detailFilter");
       if(detailFilterRaw){
@@ -628,19 +635,17 @@
       renderItems();
     }
 
-    // === DETAIL PAGE ===
+    // Detail page initialization
     if(window.location.pathname.includes("detail")){
       renderDetail();
     }
 
-    // modal image close button binding (if exists)
+    // modal close binding
     const modalCloseBtn = document.getElementById("modalCloseBtn");
     if(modalCloseBtn) modalCloseBtn.onclick = closeImageModal;
   });
 
-  // expose a couple helpers for inline/back usage if needed
-  window.goHome = goHome;
-  window.goBackToHome = goBackToHome;
+  // expose helpers
   window.openImageModal = openImageModal;
   window.closeImageModal = closeImageModal;
 
