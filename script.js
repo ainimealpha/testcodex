@@ -1,11 +1,7 @@
-// script.js - REVISI FINAL (index/items/detail behavior)
-// Assumes data.js defines DATA and PLACEHOLDER
+// script.js - Revisi: Page1 modal-only categories, Page2 item layout vertical (image,name,tags,rarity), Page3 rarity inline & mobile-friendly slider nav below
 (function(){
   'use strict';
 
-  // =========================
-  // Globals & Helpers
-  // =========================
   const FALLBACK = (typeof PLACEHOLDER !== 'undefined') ? PLACEHOLDER : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'%3E%3Crect width='100%25' height='100%25' fill='%23ffe9a8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23333333' font-family='Arial' font-size='24'%3ENo Image%3C/text%3E%3C/svg%3E";
 
   // Navigation helpers
@@ -13,7 +9,6 @@
   function goBackToHome(){ window.location.href = "index.html"; }
   function goToItemsPage(){ window.location.href = "items.html"; }
 
-  // expose for HTML onclicks
   window.goHome = goHome;
   window.goBackToHome = goBackToHome;
   window.goToItemsPage = goToItemsPage;
@@ -53,9 +48,7 @@
     return foundKey;
   }
 
-  // =========================
-  // PAGE 1: START modal (ONLY category grid; no tags/rarity shown)
-  // =========================
+  // ---------- PAGE 1 ----------
   function buildCategoryCardForModal(key){
     const cat = DATA[key];
     const firstItem = (cat && cat.items && cat.items[0]) ? cat.items[0] : null;
@@ -78,7 +71,6 @@
     h3.textContent = cat.title || key;
     card.appendChild(h3);
 
-    // click goes to items for that category
     card.addEventListener('click', () => {
       localStorage.setItem("activeCategory", key);
       closeCategoryModal();
@@ -90,7 +82,6 @@
   function openCategoryModal(){
     const modal = document.getElementById('categoryModal');
     if(!modal) return;
-    // Populate categories only (no tags/rarity here)
     const grid = document.getElementById('categoryGrid');
     if(grid){
       grid.innerHTML = "";
@@ -112,9 +103,7 @@
     document.body.style.overflow = '';
   }
 
-  // =========================
-  // PAGE 2: filters & items
-  // =========================
+  // ---------- PAGE 2 ----------
   function uniqueTagsForCategory(catKey){
     if(!DATA[catKey]) return [];
     const s = new Set();
@@ -125,7 +114,6 @@
     return ["S","A","B","C","D"];
   }
 
-  // showChecklist signature: (catKey, preTags, preRarities, options)
   function showChecklist(catKey, preSelectedTags = [], preSelectedRarities = [], options = { showTitle: true }){
     hideChecklist();
     const panel = document.createElement('div');
@@ -147,12 +135,12 @@
     header.appendChild(closeBtn);
     panel.appendChild(header);
 
-    // Tags
+    // Tags section
     const tagsSection = document.createElement('div');
     tagsSection.className = "checklist-section";
     const tagLabel = document.createElement('div');
     tagLabel.className = "checklist-subtitle";
-    tagLabel.style.fontSize = "15px"; // sedikit lebih besar
+    tagLabel.style.fontSize = "15px";
     tagLabel.textContent = "Tags";
     tagsSection.appendChild(tagLabel);
 
@@ -182,12 +170,12 @@
     tagsSection.appendChild(chips);
     panel.appendChild(tagsSection);
 
-    // Rarity (with extra spacing)
+    // Rarity section with spacing
     const raritySection = document.createElement('div');
     raritySection.className = "checklist-section";
     const rarityLabel = document.createElement('div');
     rarityLabel.className = "checklist-subtitle";
-    rarityLabel.style.marginTop = "12px"; // jarak tambahan
+    rarityLabel.style.marginTop = "12px";
     rarityLabel.style.fontSize = "15px";
     rarityLabel.textContent = "Rarity";
     raritySection.appendChild(rarityLabel);
@@ -211,7 +199,6 @@
     raritySection.appendChild(rarityChips);
     panel.appendChild(raritySection);
 
-    // actions
     const actions = document.createElement('div');
     actions.className = "checklist-actions";
     const apply = document.createElement('button');
@@ -231,10 +218,7 @@
     }
   }
 
-  function hideChecklist(){
-    const panel = document.getElementById("checklistPanel");
-    if(panel) panel.remove();
-  }
+  function hideChecklist(){ const panel = document.getElementById("checklistPanel"); if(panel) panel.remove(); }
 
   function applyChecklistFilters(){
     const panel = document.getElementById("checklistPanel");
@@ -249,10 +233,7 @@
       }
     });
     const searchInput = document.getElementById("searchInput");
-    if(searchInput) {
-      searchInput.dataset.checkedTags = JSON.stringify(tagsChecked);
-      searchInput.dataset.checkedRarities = JSON.stringify(rarityChecked);
-    }
+    if(searchInput) { searchInput.dataset.checkedTags = JSON.stringify(tagsChecked); searchInput.dataset.checkedRarities = JSON.stringify(rarityChecked); }
     hideChecklist();
     renderItems();
   }
@@ -278,6 +259,7 @@
     btn.style.display = "inline-block";
   }
 
+  // Render items: VISUAL ORDER change here (image -> name -> tags -> rarity). Remove nickname/desc from list.
   function renderItems(){
     const category = localStorage.getItem("activeCategory");
     if(!category || !DATA[category]) { goHome(); return; }
@@ -287,7 +269,6 @@
     const title = document.getElementById("categoryTitle");
     if(title) title.textContent = data.title || category;
 
-    // small logo next to title
     const logoWrap = document.getElementById("categoryLogoWrap");
     if(logoWrap){
       logoWrap.innerHTML = "";
@@ -305,21 +286,15 @@
     let checkedTags = [];
     let checkedRarities = [];
     if(searchInput && searchInput.dataset.checkedTags){
-      try { checkedTags = JSON.parse(searchInput.dataset.checkedTags) || []; }
-      catch(e){ checkedTags = []; }
+      try { checkedTags = JSON.parse(searchInput.dataset.checkedTags) || []; } catch(e){ checkedTags = []; }
     }
     if(searchInput && searchInput.dataset.checkedRarities){
-      try { checkedRarities = JSON.parse(searchInput.dataset.checkedRarities) || []; }
-      catch(e){ checkedRarities = []; }
+      try { checkedRarities = JSON.parse(searchInput.dataset.checkedRarities) || []; } catch(e){ checkedRarities = []; }
     }
 
     let items = (data.items||[]).filter(it => (it.name||"").toLowerCase().includes(search) || (it.desc||"").toLowerCase().includes(search));
-    if(checkedTags.length > 0){
-      items = items.filter(it => (it.tags||[]).some(t => checkedTags.includes(t)));
-    }
-    if(checkedRarities.length > 0){
-      items = items.filter(it => checkedRarities.includes(it.rarity));
-    }
+    if(checkedTags.length > 0) items = items.filter(it => (it.tags||[]).some(t => checkedTags.includes(t)));
+    if(checkedRarities.length > 0) items = items.filter(it => checkedRarities.includes(it.rarity));
 
     const container = document.getElementById("itemsContainer");
     if(!container) return;
@@ -339,47 +314,44 @@
 
     items.forEach(it => {
       const div = document.createElement("div");
-      div.className = "card item-card small-card";
+      div.className = "card item-card small-card item-vertical";
       div.style.position = "relative";
 
-      const thumbWrap = document.createElement('div');
-      thumbWrap.className = "thumb-wrap";
-      thumbWrap.style.position = "relative";
-
-      const thumb = (it.images && it.images.main) ? it.images.main : FALLBACK;
+      // IMAGE (top)
       const img = document.createElement('img');
-      img.src = thumb;
-      img.loading = "lazy";
+      img.src = (it.images && it.images.main) ? it.images.main : FALLBACK;
       img.alt = it.name || "item";
-      thumbWrap.appendChild(img);
+      img.loading = "lazy";
+      img.className = "item-card-img";
+      div.appendChild(img);
 
-      // rarity badge
-      const rarityBadge = document.createElement('span');
-      rarityBadge.className = "rarity-badge";
-      rarityBadge.textContent = it.rarity || "";
-      thumbWrap.appendChild(rarityBadge);
-
-      // overlay tags
-      const overlayTags = document.createElement('div');
-      overlayTags.className = "img-overlay-tags";
-      (it.tags||[]).slice(0,3).forEach(t => {
-        const tagEl = document.createElement('span');
-        tagEl.className = "overlay-tag";
-        tagEl.textContent = t.toUpperCase();
-        overlayTags.appendChild(tagEl);
-      });
-      thumbWrap.appendChild(overlayTags);
-
-      div.appendChild(thumbWrap);
-
+      // NAME
       const h3 = document.createElement('h3');
       h3.textContent = it.name || "";
+      h3.className = "item-name";
       div.appendChild(h3);
 
-      const p = document.createElement('p');
-      p.textContent = it.desc || "";
-      div.appendChild(p);
+      // TAGS (small, horizontal, contained)
+      const tagRow = document.createElement('div');
+      tagRow.className = "item-tags-row";
+      (it.tags || []).forEach(t => {
+        const sp = document.createElement('span');
+        sp.className = "item-tag-mini";
+        sp.textContent = t;
+        tagRow.appendChild(sp);
+      });
+      div.appendChild(tagRow);
 
+      // RARITY (below tags)
+      const rarityWrap = document.createElement('div');
+      rarityWrap.className = "item-rarity-wrap";
+      const raritySpan = document.createElement('span');
+      raritySpan.className = "item-rarity";
+      raritySpan.textContent = it.rarity || "";
+      rarityWrap.appendChild(raritySpan);
+      div.appendChild(rarityWrap);
+
+      // click opens detail
       div.addEventListener('click', () => {
         localStorage.setItem("selectedId", it.id);
         localStorage.setItem("activeCategory", category);
@@ -390,29 +362,18 @@
     });
   }
 
-  // =========================
-  // PAGE 3: Detail & extras slider (circular)
-  // =========================
+  // ---------- PAGE 3 ----------
   function ensureDetailOverlay(){
     let ov = document.getElementById("detailOverlay");
-    if(!ov){
-      ov = document.createElement("div");
-      ov.id = "detailOverlay";
-      document.body.appendChild(ov);
-    }
-    ov.style.position = "fixed";
-    ov.style.top = "0";
-    ov.style.left = "0";
-    ov.style.right = "0";
-    ov.style.bottom = "0";
+    if(!ov){ ov = document.createElement("div"); ov.id = "detailOverlay"; document.body.appendChild(ov); }
+    ov.style.position = "fixed"; ov.style.top = "0"; ov.style.left = "0"; ov.style.right = "0"; ov.style.bottom = "0";
     ov.style.background = "linear-gradient(to bottom, rgba(255,255,255,0.85), rgba(255,255,255,0.95))";
-    ov.style.pointerEvents = "none";
-    ov.style.zIndex = "1";
+    ov.style.pointerEvents = "none"; ov.style.zIndex = "1";
     const c = document.querySelector(".container");
     if(c){ c.style.position = "relative"; c.style.zIndex = "2"; }
   }
 
-  // Create circular extras slider (3 images)
+  // extras slider: circular, nav below images (mobile friendly)
   function createExtrasSlider(extras){
     const wrap = document.createElement('div');
     wrap.className = 'extras-slider-wrapper';
@@ -420,66 +381,58 @@
     const slider = document.createElement('div');
     slider.className = 'extras-slider';
 
-    // ensure 3 items
     const arr = [extras[0]||FALLBACK, extras[1]||FALLBACK, extras[2]||FALLBACK];
     const len = arr.length;
-    let activeIndex = 1; // center item index by default
+    let activeIndex = 1;
 
     function render(){
       slider.innerHTML = "";
       const prevIndex = (activeIndex - 1 + len) % len;
       const nextIndex = (activeIndex + 1) % len;
 
-      // display slides in natural order but mark classes using indices
       for(let idx=0; idx<len; idx++){
         const slot = document.createElement('div');
         slot.className = 'extras-slide';
         if(idx === activeIndex) slot.classList.add('active');
         if(idx === prevIndex || idx === nextIndex) slot.classList.add('side');
-
         const im = document.createElement('img');
         im.src = arr[idx] || FALLBACK;
         im.alt = `extra-${idx+1}`;
         im.loading = "lazy";
-
         if(idx === activeIndex){
           im.style.cursor = "pointer";
           im.addEventListener('click', () => openImageModal(arr[idx] || FALLBACK));
         } else {
           im.style.cursor = "pointer";
-          // clicking side rotates so clicked becomes center
-          im.addEventListener('click', () => {
-            activeIndex = idx;
-            render();
-          });
+          im.addEventListener('click', () => { activeIndex = idx; render(); });
         }
         slot.appendChild(im);
         slider.appendChild(slot);
       }
     }
 
-    // prev/next circular
-    const prev = document.createElement('button');
-    prev.className = 'slider-nav prev-nav';
-    prev.type = 'button';
-    prev.innerHTML = '&#9664;';
-    prev.addEventListener('click', () => {
-      activeIndex = (activeIndex - 1 + len) % len;
-      render();
-    });
+    // create nav container below slider (mobile friendly)
+    const navWrap = document.createElement('div');
+    navWrap.className = 'extras-nav-wrap';
 
-    const next = document.createElement('button');
-    next.className = 'slider-nav next-nav';
-    next.type = 'button';
-    next.innerHTML = '&#9654;';
-    next.addEventListener('click', () => {
-      activeIndex = (activeIndex + 1) % len;
-      render();
-    });
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'slider-nav prev-nav';
+    prevBtn.type = 'button';
+    prevBtn.innerHTML = '&#9664;';
+    prevBtn.addEventListener('click', () => { activeIndex = (activeIndex - 1 + len) % len; render(); });
 
-    wrap.appendChild(prev);
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'slider-nav next-nav';
+    nextBtn.type = 'button';
+    nextBtn.innerHTML = '&#9654;';
+    nextBtn.addEventListener('click', () => { activeIndex = (activeIndex + 1) % len; render(); });
+
+    navWrap.appendChild(prevBtn);
+    navWrap.appendChild(nextBtn);
+
     wrap.appendChild(slider);
-    wrap.appendChild(next);
+    wrap.appendChild(navWrap);
+
     render();
     return wrap;
   }
@@ -493,12 +446,7 @@
     if(!selected){ container.innerHTML = "<div class='card'><h3>Item not found</h3></div>"; return; }
 
     let category = localStorage.getItem("activeCategory") || findCategoryByItemId(id);
-    if(!category){
-      Object.keys(DATA).some(k => {
-        if(DATA[k].items.some(it => String(it.id) === String(id))){ category = k; return true; }
-        return false;
-      });
-    }
+    if(!category){ Object.keys(DATA).some(k => { if(DATA[k].items.some(it => String(it.id) === String(id))){ category = k; return true;} return false; }); }
     applyCategoryTheme(category);
 
     const wallpaperUrl = (selected.images && selected.images.main) ? selected.images.main : null;
@@ -508,9 +456,7 @@
       document.body.style.backgroundPosition = "center";
       document.body.style.backgroundRepeat = "no-repeat";
       document.body.style.backgroundAttachment = "fixed";
-    } else {
-      applyCategoryTheme(category);
-    }
+    } else { applyCategoryTheme(category); }
 
     ensureDetailOverlay();
 
@@ -533,16 +479,42 @@
     const heroOverlay = document.createElement('div');
     heroOverlay.className = "hero-overlay";
 
+    // Title row: name left, rarity right
+    const titleRow = document.createElement('div');
+    titleRow.className = 'detail-title-row';
+    titleRow.style.display = 'flex';
+    titleRow.style.justifyContent = 'space-between';
+    titleRow.style.alignItems = 'center';
+    titleRow.style.gap = '12px';
+
     const h2 = document.createElement('h2');
     h2.textContent = selected.name || "";
-    heroOverlay.appendChild(h2);
+    h2.style.margin = 0;
+    h2.style.fontSize = '18px';
+    titleRow.appendChild(h2);
 
+    const rarityRight = document.createElement('div');
+    rarityRight.style.marginLeft = 'auto';
+    const raritySpan = document.createElement('span');
+    raritySpan.className = 'detail-rarity-inline';
+    raritySpan.textContent = selected.rarity || "";
+    raritySpan.style.fontWeight = '900';
+    raritySpan.style.padding = '6px 10px';
+    raritySpan.style.borderRadius = '8px';
+    raritySpan.style.background = 'rgba(0,0,0,0.6)';
+    raritySpan.style.color = '#fff';
+    rarityRight.appendChild(raritySpan);
+    titleRow.appendChild(rarityRight);
+
+    heroOverlay.appendChild(titleRow);
+
+    // description
     const descP = document.createElement('p');
     descP.className = "hero-desc";
     descP.textContent = selected.desc || "";
     heroOverlay.appendChild(descP);
 
-    // tags: use .tag styling (color per category via --tag-bg)
+    // tags under title/desc
     const tagWrap = document.createElement('div');
     tagWrap.className = "item-tags";
     (selected.tags||[]).forEach(t => {
@@ -564,13 +536,6 @@
     heroCard.appendChild(heroOverlay);
     wrapper.appendChild(heroCard);
 
-    if(selected.rarity){
-      const rarityBadgeDetail = document.createElement('div');
-      rarityBadgeDetail.className = "detail-rarity-badge";
-      rarityBadgeDetail.textContent = selected.rarity;
-      heroOverlay.appendChild(rarityBadgeDetail);
-    }
-
     if(selected.story && String(selected.story).trim().length > 0){
       const storyCard = document.createElement('div');
       storyCard.className = 'story-card';
@@ -583,7 +548,7 @@
       wrapper.appendChild(storyCard);
     }
 
-    // extras slider (circular) - only center opens popup
+    // extras slider + nav below
     const extrasSliderNode = createExtrasSlider(extras);
     wrapper.appendChild(extrasSliderNode);
 
@@ -599,14 +564,8 @@
     modal.style.display = "flex";
     document.addEventListener("keydown", escModalHandler);
   }
-  function closeImageModal(){
-    const modal = document.getElementById("imgModal");
-    if(modal) modal.style.display = "none";
-    document.removeEventListener("keydown", escModalHandler);
-  }
-  function escModalHandler(e){
-    if(e.key === "Escape") closeImageModal();
-  }
+  function closeImageModal(){ const modal = document.getElementById("imgModal"); if(modal) modal.style.display = "none"; document.removeEventListener("keydown", escModalHandler); }
+  function escModalHandler(e){ if(e.key === "Escape") closeImageModal(); }
 
   document.addEventListener("click", function(e){
     const modal = document.getElementById("imgModal");
@@ -614,35 +573,17 @@
     if(e.target === modal) closeImageModal();
   });
 
-  // =========================
-  // Init bindings
-  // =========================
+  // ---------- INIT ----------
   document.addEventListener("DOMContentLoaded", function(){
-    // START binding for index
     const startBtn = document.getElementById("startBtn");
     const categoryModal = document.getElementById("categoryModal");
     const modalClose = document.getElementById("modalClose");
-    if(startBtn){
-      startBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        openCategoryModal();
-      });
-    }
-    if(modalClose){
-      modalClose.addEventListener('click', closeCategoryModal);
-    }
-    document.addEventListener('keydown', (e) => {
-      if(e.key === "Escape"){
-        if(categoryModal && !categoryModal.classList.contains('hidden')) closeCategoryModal();
-      }
-    });
-    if(categoryModal){
-      categoryModal.addEventListener('click', (ev) => {
-        if(ev.target === categoryModal) closeCategoryModal();
-      });
-    }
+    if(startBtn){ startBtn.addEventListener('click', (e) => { e.preventDefault(); openCategoryModal(); }); }
+    if(modalClose){ modalClose.addEventListener('click', closeCategoryModal); }
 
-    // Items page
+    document.addEventListener('keydown', (e) => { if(e.key === "Escape"){ if(categoryModal && !categoryModal.classList.contains('hidden')) closeCategoryModal(); } });
+    if(categoryModal){ categoryModal.addEventListener('click', (ev) => { if(ev.target === categoryModal) closeCategoryModal(); }); }
+
     if(window.location.pathname.includes("items")){
       const detailFilterRaw = localStorage.getItem("detailFilter");
       if(detailFilterRaw){
@@ -687,7 +628,6 @@
       renderItems();
     }
 
-    // Detail page
     if(window.location.pathname.includes("detail")){
       renderDetail();
     }
