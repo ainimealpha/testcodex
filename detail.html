@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -10,7 +10,7 @@
 </head>
 <body>
   <main class="container">
-    <!-- Back button: RIGHT TOP, text "Back" -->
+    <!-- Back button: RIGHT TOP, text "Back" (go to items page) -->
     <button class="modern-back detail-back detail-back-right" onclick="goToItemsPage()" aria-label="Back to Items">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M15 18l-6-6 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -19,6 +19,9 @@
     </button>
 
     <div id="detailContainer" aria-live="polite"></div>
+
+    <!-- HOME button centered bottom -->
+    <button class="detail-home" onclick="goHome()" aria-label="Home">Home</button>
   </main>
 
   <!-- modal node (hidden by default) - preview only -->
