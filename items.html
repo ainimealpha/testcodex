@@ -11,21 +11,23 @@
 <body>
   <main class="container">
     <header class="header items-header">
-      <div class="category-title-wrap">
+      <div class="title-wrap">
         <h2 id="categoryTitle" class="title" aria-live="polite"></h2>
-        <!-- small logo image for the category -->
-        <img id="categoryLogo" class="category-logo" src="" alt="Category Logo" />
+        <div id="categoryLogoWrap" class="category-logo-wrap" aria-hidden="true">
+          <!-- small logo image will be injected here by script -->
+        </div>
       </div>
 
-      <!-- Back MUST always go to HOME (index.html) -->
-      <button class="nav-btn" onclick="goBack()" aria-label="Back">← Back</button>
+      <!-- Back button (always to Home) -->
+      <button class="nav-btn back-to-home" onclick="goBackToHome()" aria-label="Back">← Back</button>
     </header>
 
     <div class="controls">
       <input id="searchInput" type="search" placeholder="Search in this category..." aria-label="Search" />
-      <!-- Filters toggle injected by script -->
+      <!-- checklist toggle inserted by script when appropriate -->
     </div>
 
+    <!-- items grid inserted by script -->
     <section id="itemsContainer" class="grid" aria-label="Items"></section>
   </main>
 </body>
