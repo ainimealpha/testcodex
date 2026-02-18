@@ -14,25 +14,32 @@
       <h1 class="logo">ANIME CODEX</h1>
     </header>
 
-    <!-- START button (large) -->
+    <!-- START button (very large and modern) -->
     <div class="start-wrap" id="startWrap">
-      <button id="startBtn" class="start-btn" type="button" aria-haspopup="dialog" aria-controls="categoryModal">START</button>
+      <button id="startBtn" class="start-btn start-btn-large" type="button" aria-haspopup="dialog" aria-controls="categoryModal">START</button>
     </div>
 
-    <!-- season text & subtitle: BELOW START as requested -->
+    <!-- season text & subtitle: BELOW START -->
     <div class="hero-text hero-text-below">
       <div class="season-line">SEASON 1 - Adventure Begins</div>
       <div class="arc-line">Adventure Arc</div>
     </div>
     <p class="subtitle subtitle-centered">Tap a card to open the category</p>
 
-    <!-- category modal (popup) - initially hidden; opened by START -->
+    <!-- START modal: filter-like controls (tags + rarity) + category grid -->
     <div id="categoryModal" class="category-modal hidden" role="dialog" aria-modal="true" aria-labelledby="categoryModalTitle">
       <div class="category-modal-content" role="document">
         <div class="modal-header">
           <h2 id="categoryModalTitle">Choose a Category</h2>
           <button id="modalClose" class="nav-btn" aria-label="Close categories">✕</button>
         </div>
+
+        <!-- filter row (chips) -->
+        <div id="modalFilters" class="modal-filters">
+          <div id="modalTagChips" class="checklist-chips"></div>
+          <div class="rarity-row" id="modalRarityChips"></div>
+        </div>
+
         <div id="categoryGrid" class="grid category-grid" aria-live="polite">
           <!-- category cards inserted here by script -->
         </div>
