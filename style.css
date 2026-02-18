@@ -14,7 +14,8 @@ body{
 }
 
 /* container and header */
-.container{max-width:1100px;margin:0 auto;padding:10px;position:relative;z-index:5;}
+/* make container full-width friendly for mobile (user said full from HP) */
+.container{max-width:1100px;width:100%;margin:0 auto;padding:12px;position:relative;z-index:5;}
 .header{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:10px;}
 .logo{font-weight:800;font-size:18px;}
 .subtitle{color:#444;margin:4px 0 0 0;font-size:13px;}
