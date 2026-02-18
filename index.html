@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -26,7 +26,7 @@
     </div>
     <p class="subtitle subtitle-centered">Tap a card to open the category</p>
 
-    <!-- START modal: filter-like controls (tags + rarity) + category grid -->
+    <!-- START modal: ONLY category grid (NO tags / NO rarity here) -->
     <div id="categoryModal" class="category-modal hidden" role="dialog" aria-modal="true" aria-labelledby="categoryModalTitle">
       <div class="category-modal-content" role="document">
         <div class="modal-header">
@@ -34,14 +34,9 @@
           <button id="modalClose" class="nav-btn" aria-label="Close categories">✕</button>
         </div>
 
-        <!-- filter row (chips) -->
-        <div id="modalFilters" class="modal-filters">
-          <div id="modalTagChips" class="checklist-chips"></div>
-          <div class="rarity-row" id="modalRarityChips"></div>
-        </div>
-
+        <!-- category grid only -->
         <div id="categoryGrid" class="grid category-grid" aria-live="polite">
-          <!-- category cards inserted here by script -->
+          <!-- category cards inserted by script -->
         </div>
       </div>
     </div>
