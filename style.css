@@ -1,7 +1,10 @@
-/* style.css - update: bigger start button, modern filter visuals, overlay hidden by default, mobile-friendly tweaks */
+/* style.css - Revised (fix page1 small scroll + page3 slider horizontal/pan issues)
+   Only CSS changed. Mobile-first and minimal-impact. */
 
 *{box-sizing:border-box;}
 html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Roboto,system-ui,-apple-system,"Helvetica Neue",Arial;}
+/* prevent horizontal page pan/scroll globally (fixes accidental side-scroll on mobile) */
+html, body { overflow-x: hidden; -webkit-overflow-scrolling: touch; }
 body{background:linear-gradient(180deg,#f6f0ff,#e6f7ff);color:#222;-webkit-font-smoothing:antialiased;}
 
 /* CSS variables */
@@ -14,20 +17,22 @@ body{background:linear-gradient(180deg,#f6f0ff,#e6f7ff);color:#222;-webkit-font-
 /* container */
 .container{max-width:1100px;margin:0 auto;padding:14px;position:relative;}
 
-/* HOME page centering */
+/* HOME page centering - ensure no small overflow and truly centered */
 .home-page .container{
-  min-height: calc(100vh - 40px);
+  min-height: 100vh; /* ensure occupies full viewport so no tiny extra scroll */
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:center;
+  justify-content:center; /* vertically center */
   gap:12px;
+  padding-bottom: 12px; /* small safe padding but not enough to cause scroll */
+  overflow: hidden; /* prevent internal overflow */
 }
 
 /* logo */
 .logo{font-weight:900;font-size:44px;text-align:center;margin:6px 0;font-family:Georgia,serif;color:#4b2673;text-transform:uppercase;}
 
-/* START button: slightly bigger */
+/* START button: slightly bigger (per request) */
 .start-wrap{display:flex;justify-content:center;position:relative;z-index:10;}
 .start-wrap-lowered{margin-top:0;}
 .start-btn{background:linear-gradient(135deg,#8ad7ff,#cfa6ff);border:none;padding:18px 36px;border-radius:18px;font-weight:900;font-size:20px;cursor:pointer;color:white;box-shadow:0 18px 40px rgba(70,20,120,0.18);}
@@ -125,14 +130,39 @@ input[type="search"]{flex:1;padding:12px;border-radius:12px;border:none;font-siz
 /* story */
 .story-card{background:linear-gradient(180deg,#fff,#fffef6);border-radius:12px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,0.06);}
 
-/* extras slider */
+/* extras slider - IMPROVED: prevent horizontal page pan, mobile-friendly sizes */
 .extras-slider-wrapper{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:12px;width:100%;}
-.extras-slider{display:flex;gap:12px;align-items:center;justify-content:center;width:100%;overflow:visible;}
-.extras-slide img{border-radius:12px;object-fit:cover;box-shadow:0 12px 36px rgba(0,0,0,0.08);display:block;}
-.extras-slide.side img{width:110px;height:70px;opacity:0.95;}
-.extras-slide.active img{width:260px;height:160px;opacity:1;}
+.extras-slider{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  overflow:hidden;     /* prevent slider from creating horizontal overflow */
+  touch-action: pan-y; /* allow vertical scroll only; disables horizontal page pan on mobile */
+  -webkit-overflow-scrolling: touch;
+}
+.extras-slide{
+  flex: 0 0 auto;     /* fixed-width slides to avoid stretching */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.extras-slide img{
+  border-radius:12px;
+  object-fit:cover;
+  box-shadow:0 12px 36px rgba(0,0,0,0.08);
+  display:block;
+  transition: transform .18s ease, opacity .18s ease;
+}
+
+/* sizes tuned for mobile: center image largest, sides smaller */
+.extras-slide.side img{ width:24vw; max-width:120px; height:auto; opacity:0.95; transform: scale(0.98); }
+.extras-slide.active img{ width:56vw; max-width:320px; height:auto; opacity:1; transform: scale(1); }
+
+/* nav below slider for easy tapping */
 .extras-nav-wrap{display:flex;gap:18px;align-items:center;justify-content:center;margin-top:8px;}
-.slider-nav{background:linear-gradient(90deg,#f0f0f8,#e8e8ff);border:none;font-size:18px;color:#222;cursor:pointer;padding:10px 14px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,0.06);}
+.slider-nav{background:linear-gradient(90deg,#f0f0f8,#e8e8ff);border:none;font-size:18px;color:#222;cursor:pointer;padding:12px 16px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,0.06);}
 
 /* modal */
 .img-modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:18px;}
@@ -151,8 +181,8 @@ input[type="search"]{flex:1;padding:12px;border-radius:12px;border:none;font-siz
   .start-btn-large{padding:34px 48px;font-size:36px;}
   .modal-cat-thumb{height:80px;}
   .grid-thumb{height:100px;}
-  .extras-slide.side img{width:90px;height:60px;}
-  .extras-slide.active img{width:200px;height:120px;}
+  .extras-slide.side img{width:90px;height:auto;}
+  .extras-slide.active img{width:200px;height:auto;}
   .items-grid{grid-template-columns:repeat(3,1fr);}
   .items-back{right:6px;top:6px;}
   .modal-close-btn{padding:6px;border-radius:8px;}
