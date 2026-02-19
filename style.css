@@ -1,10 +1,21 @@
-/* style.css - Revised (fix page1 small scroll + page3 slider horizontal/pan issues)
-   Only CSS changed. Mobile-first and minimal-impact. */
+/* style.css - Revision: fix home small scroll + detail page spacing + slider horizontal pan issues
+   Only CSS changes. Mobile-first, minimal, do not touch JS/HTML.
+*/
 
+/* Reset & base */
 *{box-sizing:border-box;}
 html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Roboto,system-ui,-apple-system,"Helvetica Neue",Arial;}
-/* prevent horizontal page pan/scroll globally (fixes accidental side-scroll on mobile) */
+
+/* Prevent horizontal pan globally */
 html, body { overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+
+/* Make home page non-scrollable (only when body has class "home-page") */
+body.home-page {
+  height:100vh;
+  overflow: hidden; /* disable vertical scrolling on home */
+}
+
+/* Page background (kept neutral, will be overridden per-category from script) */
 body{background:linear-gradient(180deg,#f6f0ff,#e6f7ff);color:#222;-webkit-font-smoothing:antialiased;}
 
 /* CSS variables */
@@ -17,16 +28,16 @@ body{background:linear-gradient(180deg,#f6f0ff,#e6f7ff);color:#222;-webkit-font-
 /* container */
 .container{max-width:1100px;margin:0 auto;padding:14px;position:relative;}
 
-/* HOME page centering - ensure no small overflow and truly centered */
+/* HOME: ensure container fits exactly viewport and cannot cause tiny extra scroll */
 .home-page .container{
-  min-height: 100vh; /* ensure occupies full viewport so no tiny extra scroll */
+  min-height: 100vh; /* occupy viewport height */
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:center; /* vertically center */
+  justify-content:center;
   gap:12px;
-  padding-bottom: 12px; /* small safe padding but not enough to cause scroll */
-  overflow: hidden; /* prevent internal overflow */
+  padding-bottom: 0; /* remove extra bottom padding that caused small scroll */
+  overflow: hidden; /* prevent inner overflow on home */
 }
 
 /* logo */
@@ -43,7 +54,7 @@ body{background:linear-gradient(180deg,#f6f0ff,#e6f7ff);color:#222;-webkit-font-
 .subtitle{color:#444;margin:8px 0 0 0;font-size:13px;text-align:center;}
 .subtitle-small{color:#666;margin-top:6px;font-size:12px;text-align:center;}
 
-/* Modal: category choose - 3 columns compact */
+/* Category Modal - unchanged behavior, only safe styles */
 .category-modal{position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);z-index:9999;padding:12px;}
 .category-modal.hidden{display:none;}
 .category-modal-content{width:100%;max-width:920px;background:linear-gradient(180deg,#fff,#fffef6);border-radius:12px;padding:14px;box-shadow:0 30px 80px rgba(0,0,0,0.4);max-height:86vh;overflow:auto;}
@@ -71,8 +82,7 @@ body{background:linear-gradient(180deg,#f6f0ff,#e6f7ff);color:#222;-webkit-font-
 .controls{display:flex;gap:10px;align-items:center;margin:12px 0;padding-bottom:4px;}
 input[type="search"]{flex:1;padding:12px;border-radius:12px;border:none;font-size:14px;box-shadow:0 8px 22px rgba(0,0,0,0.06);}
 
-/* checklist: modern header & spacing
-   header row contains 'Tags' (left) and close X (right) */
+/* checklist styles */
 .checklist-panel{background:linear-gradient(180deg,#fff,#fffef6);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 22px 60px rgba(16,24,40,0.06);}
 .checklist-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(0,0,0,0.04);}
 .checklist-title{font-weight:900;font-size:16px;color:#222;}
@@ -80,18 +90,16 @@ input[type="search"]{flex:1;padding:12px;border-radius:12px;border:none;font-siz
 .checklist-chips{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
 .modern-close{background:linear-gradient(90deg,#f0f0f4,#dcdcf0);border:none;padding:8px;border-radius:10px;cursor:pointer;font-weight:800;}
 
-/* checklist-toggle (Filters button) modern */
+/* checklist toggle button */
 .checklist-toggle{background:linear-gradient(90deg,#4da6ff,#6b46ff);color:white;padding:10px 14px;border-radius:12px;border:none;font-weight:900;box-shadow:0 14px 36px rgba(77,117,255,0.12);cursor:pointer;}
 
-/* chip */
+/* chips */
 .chip{display:inline-flex;align-items:center;border-radius:999px;padding:0;margin:0;user-select:none;cursor:pointer;}
 .chip input{display:none;}
 .chip span{display:inline-block;padding:8px 12px;border-radius:999px;background:var(--tag-bg);font-weight:800;font-size:13px;color:#222;border:1px solid rgba(0,0,0,0.04);}
-
-/* when checked */
 .chip input:checked + span{background:linear-gradient(90deg,var(--accent-color),#ffd57f);color:#fff;}
 
-/* rarity spacing & apply gap */
+/* rarity spacing & apply */
 .rarity-chips-row{margin-top:14px;}
 .checklist-actions{display:flex;justify-content:flex-end;margin-top:16px;}
 .apply-btn{background:var(--accent-color);color:white;border:none;padding:12px 18px;border-radius:12px;font-weight:900;cursor:pointer;box-shadow:0 14px 36px rgba(0,0,0,0.12);}
@@ -116,52 +124,82 @@ input[type="search"]{flex:1;padding:12px;border-radius:12px;border:none;font-siz
 /* item name */
 .grid-item-name{font-size:14px;font-weight:800;margin:0;padding-left:2px;}
 
-/* detail */
-.detail-wrapper{display:flex;flex-direction:column;gap:12px;padding-bottom:100px;}
-.hero-card{position:relative;border-radius:12px;overflow:hidden;margin-top:8px;}
-.hero-img{width:100%;height:260px;object-fit:cover;border-radius:10px;}
-.hero-overlay{position:absolute;left:14px;right:14px;bottom:14px;background:linear-gradient(180deg,rgba(255,255,255,0.0),rgba(255,255,255,0.96));padding:14px;border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,0.12);}
-.detail-title-row{display:flex;justify-content:space-between;align-items:center;gap:12px;}
-.hero-desc{margin:8px 0 0 0;color:#333;font-size:14px;}
+/* ---------------------------
+   DETAIL PAGE: spacing fixes
+   --------------------------- */
+/* Ensure detail wrapper has clear spacing from top and bottom, so elements won't stick to each other */
+.detail-wrapper{
+  display:flex;
+  flex-direction:column;
+  gap:18px;               /* larger gap between blocks */
+  padding: 20px 14px 140px; /* top/right/left/bottom -> bottom kept for home button area */
+  min-height: calc(100vh - 60px);
+  box-sizing:border-box;
+}
+
+/* Hero: add margin and padding tweaks to avoid overlap with top back button */
+.hero-card{position:relative;border-radius:12px;overflow:hidden;margin-top:6px;padding-bottom:4px;}
+.hero-img{width:100%;height:260px;object-fit:cover;border-radius:10px;display:block;}
+.hero-overlay{
+  position:absolute;
+  left:14px;
+  right:14px;
+  bottom:14px;
+  background:linear-gradient(180deg,rgba(255,255,255,0.0),rgba(255,255,255,0.98));
+  padding:16px;
+  border-radius:12px;
+  box-shadow:0 12px 36px rgba(0,0,0,0.12);
+}
+
+/* title row: make sure rarity aligned right and spaced */
+.detail-title-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:6px;}
+.hero-desc{margin:8px 0 0 0;color:#333;font-size:15px;line-height:1.5;}
 
 /* tags */
-.tag{background:var(--tag-bg);padding:6px 10px;border-radius:999px;font-weight:800;font-size:12px;color:#222;margin-right:8px;display:inline-block;}
+.detail-tag-row{display:flex;gap:8px;flex-wrap:wrap; margin-top:6px;}
+.tag{background:var(--tag-bg);padding:6px 10px;border-radius:999px;font-weight:800;font-size:12px;color:#222;display:inline-block;}
 
 /* story */
-.story-card{background:linear-gradient(180deg,#fff,#fffef6);border-radius:12px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,0.06);}
+.story-card{background:linear-gradient(180deg,#fff,#fffef6);border-radius:12px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,0.06);margin-top:6px;}
 
-/* extras slider - IMPROVED: prevent horizontal page pan, mobile-friendly sizes */
-.extras-slider-wrapper{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:12px;width:100%;}
+/* ---------------------------
+   EXTRAS SLIDER: prevent horizontal pan and tighten spacing
+   --------------------------- */
+/* wrapper */
+.extras-slider-wrapper{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:12px;width:100%;box-sizing:border-box;}
+
+/* slider: hide overflow - allow vertical pan only */
 .extras-slider{
   display:flex;
   gap:12px;
   align-items:center;
   justify-content:center;
   width:100%;
-  overflow:hidden;     /* prevent slider from creating horizontal overflow */
-  touch-action: pan-y; /* allow vertical scroll only; disables horizontal page pan on mobile */
+  overflow:hidden;        /* prevent slider from creating horizontal overflow */
+  touch-action: pan-y;    /* allow vertical scrolling only; disable horizontal page pan on mobile */
   -webkit-overflow-scrolling: touch;
+  padding-left:6px;       /* small padding to avoid touching edges */
+  padding-right:6px;
 }
+
+/* slide base: fixed width to control layout */
 .extras-slide{
-  flex: 0 0 auto;     /* fixed-width slides to avoid stretching */
+  flex: 0 0 auto;
   display:flex;
   align-items:center;
   justify-content:center;
-}
-.extras-slide img{
-  border-radius:12px;
-  object-fit:cover;
-  box-shadow:0 12px 36px rgba(0,0,0,0.08);
-  display:block;
-  transition: transform .18s ease, opacity .18s ease;
+  margin: 0 6px;
 }
 
-/* sizes tuned for mobile: center image largest, sides smaller */
-.extras-slide.side img{ width:24vw; max-width:120px; height:auto; opacity:0.95; transform: scale(0.98); }
-.extras-slide.active img{ width:56vw; max-width:320px; height:auto; opacity:1; transform: scale(1); }
+/* image sizing tuned for mobile - center bigger, sides smaller */
+.extras-slide.side img{ width:24vw; max-width:120px; height:auto; opacity:0.95; transform:scale(0.98); border-radius:10px; }
+.extras-slide.active img{ width:56vw; max-width:320px; height:auto; opacity:1; transform:scale(1); border-radius:12px; }
 
-/* nav below slider for easy tapping */
-.extras-nav-wrap{display:flex;gap:18px;align-items:center;justify-content:center;margin-top:8px;}
+/* images transition */
+.extras-slide img{border-radius:12px;object-fit:cover;box-shadow:0 12px 36px rgba(0,0,0,0.08);display:block;transition: transform .18s ease, opacity .18s ease;}
+
+/* nav under slider for easy large tap targets */
+.extras-nav-wrap{display:flex;gap:18px;align-items:center;justify-content:center;margin-top:12px;}
 .slider-nav{background:linear-gradient(90deg,#f0f0f8,#e8e8ff);border:none;font-size:18px;color:#222;cursor:pointer;padding:12px 16px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,0.06);}
 
 /* modal */
@@ -170,13 +208,13 @@ input[type="search"]{flex:1;padding:12px;border-radius:12px;border:none;font-siz
 .img-modal-content img{width:100%;max-height:70vh;object-fit:contain;border-radius:8px;}
 .modal-close{position:absolute;right:12px;top:12px;background:#222;color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;}
 
-/* detail back fixed top-right */
+/* detail back fixed top-right - keep clickable and not overlap text due to padding in .detail-wrapper */
 .detail-back-right{position:fixed;top:12px;right:12px;z-index:10005;padding:10px 14px;border-radius:12px;}
 
 /* home button modern centered bottom */
 .detail-home-modern{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:10003;padding:12px 18px;border-radius:999px;background:linear-gradient(90deg,#4da6ff,#6b46ff);color:#fff;font-weight:900;box-shadow:0 20px 50px rgba(77,117,255,0.14);border:none;}
 
-/* small screens tweak */
+/* Responsive tweaks */
 @media(max-width:640px){
   .start-btn-large{padding:34px 48px;font-size:36px;}
   .modal-cat-thumb{height:80px;}
