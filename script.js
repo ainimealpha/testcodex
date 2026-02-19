@@ -1,9 +1,6 @@
-// script.js - Revisi final (mobile-first)
-// Fitur utama:
-// - Page1: kategori modal grid 3 kolom
-// - Page2: items grid (3 kolom); overlay tags HIDDEN by default; muncul jika user APPLY filter
-// - Page3: detail + extras slider (circular); Back di pojok kanan atas
-// - Safeguards ketika DATA tidak tersedia
+// script.js - Revisi: kategori background di items, modern checklist header (Tags + X kanan),
+// overlay tags only after Apply, start button size handled via CSS.
+// Mobile-first behavior preserved.
 
 (function(){
   'use strict';
@@ -19,7 +16,7 @@
     return (typeof DATA !== 'undefined') && (DATA && typeof DATA === 'object');
   }
 
-  // Navigation helpers (exposed globally for inline onclick)
+  // Navigation helpers (exposed for inline onclick)
   function goHome(){ window.location.href = "index.html"; }
   function goBackToHome(){ window.location.href = "index.html"; }
   function goToItemsPage(){ window.location.href = "items.html"; }
@@ -29,14 +26,14 @@
   window.goToItemsPage = goToItemsPage;
 
   /* ===========================
-     Theme constants
+     Theme constants (pastel gradients)
      =========================== */
   const CATEGORY_THEME = {
-    CHARACTER: { tagBg: "#ffd6da", accent: "#ff6b6b", bg: "linear-gradient(180deg,#ffe6e8,#ffd6da)" },
-    AREA:      { tagBg: "#ffe6c9", accent: "#ff9f43", bg: "linear-gradient(180deg,#fff2e6,#ffd9b8)" },
-    PET:       { tagBg: "#fff5b2", accent: "#ffd54f", bg: "linear-gradient(180deg,#fffbe6,#fff4b2)" },
-    MONSTER:   { tagBg: "#eadcff", accent: "#9b59b6", bg: "linear-gradient(180deg,#f3e8ff,#e8d7ff)" },
-    MAGIC:     { tagBg: "#d6efff", accent: "#4da6ff", bg: "linear-gradient(180deg,#e8f4ff,#d0ecff)" },
+    CHARACTER: { tagBg: "#ffd6da", accent: "#ff6b6b", bg: "linear-gradient(180deg,#ffeef0,#ffd6da)" },
+    MONSTER:   { tagBg: "#eadcff", accent: "#9b59b6", bg: "linear-gradient(180deg,#f3e8ff,#eadcff)" },
+    PET:       { tagBg: "#fff5b2", accent: "#ffd54f", bg: "linear-gradient(180deg,#fff9e0,#fff5b2)" },
+    AREA:      { tagBg: "#ffe6c9", accent: "#ff9f43", bg: "linear-gradient(180deg,#fff3e6,#ffe6c9)" },
+    MAGIC:     { tagBg: "#d6efff", accent: "#4da6ff", bg: "linear-gradient(180deg,#e8f6ff,#d6efff)" },
     DEFAULT:   { tagBg: "#fff3cd", accent: "#ffd54f", bg: "linear-gradient(180deg,#fff9c4,#ffe082)" }
   };
 
@@ -44,6 +41,7 @@
     const theme = (catKey && CATEGORY_THEME[catKey]) ? CATEGORY_THEME[catKey] : CATEGORY_THEME.DEFAULT;
     document.documentElement.style.setProperty('--tag-bg', theme.tagBg);
     document.documentElement.style.setProperty('--accent-color', theme.accent);
+    return theme;
   }
 
   /* ===========================
@@ -63,7 +61,7 @@
   }
 
   /* ===========================
-     Page 1: category modal (3 columns)
+     Page 1: Category modal (3 columns)
      =========================== */
   function buildCategoryCardForModal(key){
     const cat = (hasData() && DATA[key]) ? DATA[key] : { title: key, items: [] };
@@ -119,10 +117,9 @@
 
   /* ===========================
      Page 2: checklist & render items
-     - tags overlay on image appears ONLY if filters active (user applied)
-     - modern filter layout, spacing
+     - overlay tags appear only after user APPLY
+     - newer header layout: 'Tags' left and close X right (sejajar)
      =========================== */
-
   function uniqueTagsForCategory(catKey){
     if(!hasData() || !DATA[catKey]) return [];
     const s = new Set();
@@ -130,7 +127,6 @@
     return Array.from(s);
   }
 
-  // applyChecklistFilters: used by showChecklist apply button (panel passed in)
   function applyChecklistFilters(panel){
     if(!panel) return;
     const inputs = panel.querySelectorAll('.chip input');
@@ -154,32 +150,28 @@
     renderItems();
   }
 
-  // showChecklist with option showTitle (default true)
+  // showChecklist builds header with 'Tags' on left and '✕' on right (inline)
   function showChecklist(catKey, preTags = [], preRarities = [], options = { showTitle: true }){
     hideChecklist();
     const panel = document.createElement('div'); panel.id = 'checklistPanel'; panel.className = 'checklist-panel';
 
-    // header
+    // header row: Tags label (left) + close (right)
     const header = document.createElement('div'); header.className = 'checklist-header';
-    if(options.showTitle){
-      const title = document.createElement('div'); title.className = 'checklist-title'; title.textContent = 'Filter tags & rarity';
-      header.appendChild(title);
-    }
+    const tagLabelRow = document.createElement('div'); tagLabelRow.className = 'checklist-title'; tagLabelRow.textContent = 'Tags';
+    header.appendChild(tagLabelRow);
     const closeBtn = document.createElement('button'); closeBtn.className = 'modern-close'; closeBtn.type='button'; closeBtn.textContent='✕';
     closeBtn.addEventListener('click', hideChecklist);
     header.appendChild(closeBtn);
     panel.appendChild(header);
 
-    // Tags
-    const tagLbl = document.createElement('div'); tagLbl.className='checklist-subtitle'; tagLbl.textContent='Tags';
-    panel.appendChild(tagLbl);
-    const tagRow = document.createElement('div'); tagRow.className='checklist-chips';
+    // Tags chips (under header)
+    const tagRow = document.createElement('div'); tagRow.className = 'checklist-chips'; tagRow.style.marginTop = '8px';
     const tags = uniqueTagsForCategory(catKey);
     if(tags.length === 0){
-      const none = document.createElement('div'); none.className='checklist-empty'; none.textContent='No tags'; tagRow.appendChild(none);
+      const none = document.createElement('div'); none.className = 'checklist-empty'; none.textContent = 'No tags'; tagRow.appendChild(none);
     } else {
       tags.forEach(t => {
-        const lab = document.createElement('label'); lab.className='chip';
+        const lab = document.createElement('label'); lab.className = 'chip';
         const inp = document.createElement('input'); inp.type='checkbox'; inp.value = t;
         if(preTags.includes(t)) inp.checked = true;
         const sp = document.createElement('span'); sp.textContent = t;
@@ -188,7 +180,7 @@
     }
     panel.appendChild(tagRow);
 
-    // Rarity
+    // Rarity label + chips (separate row with spacing)
     const rarLbl = document.createElement('div'); rarLbl.className='checklist-subtitle'; rarLbl.style.marginTop='12px'; rarLbl.textContent='Rarity';
     panel.appendChild(rarLbl);
     const rarRow = document.createElement('div'); rarRow.className='checklist-chips rarity-chips-row';
@@ -201,7 +193,7 @@
     });
     panel.appendChild(rarRow);
 
-    // actions
+    // actions (Apply) with spacing
     const actions = document.createElement('div'); actions.className='checklist-actions';
     const applyBtn = document.createElement('button'); applyBtn.className='apply-btn'; applyBtn.type='button'; applyBtn.textContent='Apply';
     applyBtn.addEventListener('click', () => applyChecklistFilters(panel));
@@ -235,17 +227,21 @@
 
   /* ===========================
      Render items (3-col grid)
-     - overlay tags appear only when itemsContainer has class 'filters-active'
+     - Page background set per category (pastel gradient)
+     - overlay tags appear only when filters-active
      =========================== */
   function renderItems(){
     const category = localStorage.getItem('activeCategory');
     if(!category || !hasData() || !DATA[category]) { goHome(); return; }
-    applyCategoryTheme(category);
+    const theme = applyCategoryTheme(category);
+
+    // set page background specifically for items page (pastel gradient)
+    document.body.style.background = theme.bg;
 
     const data = DATA[category];
     const title = document.getElementById('categoryTitle'); if(title) title.textContent = data.title || category;
 
-    // logo
+    // small logo
     const logoWrap = document.getElementById('categoryLogoWrap');
     if(logoWrap){
       logoWrap.innerHTML = '';
@@ -297,11 +293,11 @@
       const img = document.createElement('img'); img.src = thumb; img.alt = it.name || ''; img.className = 'grid-thumb'; img.loading='lazy';
       thumbWrap.appendChild(img);
 
-      // rarity badge (always visible on corner)
+      // rarity badge
       const rarityBadge = document.createElement('span'); rarityBadge.className = 'rarity-badge'; rarityBadge.textContent = it.rarity || '';
       thumbWrap.appendChild(rarityBadge);
 
-      // overlay tags: only add DOM if filtersActive, to keep markup minimal
+      // overlay tags (only inject when filters active)
       if(container.classList.contains('filters-active')){
         const overlay = document.createElement('div'); overlay.className = 'img-overlay-tags';
         (it.tags || []).slice(0,3).forEach(t => {
@@ -376,7 +372,9 @@
     const selected = findItemById(id); if(!selected){ container.innerHTML = "<div class='card'><h3>Item not found</h3></div>"; return; }
 
     const category = localStorage.getItem('activeCategory') || null;
-    applyCategoryTheme(category);
+    const theme = applyCategoryTheme(category);
+    // keep detail page background light but subtle (do not override heavy); set a faint gradient
+    document.body.style.background = theme.bg;
 
     container.innerHTML = '';
     const wrapper = document.createElement('div'); wrapper.className = 'detail-wrapper';
@@ -432,7 +430,7 @@
   }
 
   /* ===========================
-     Modal helpers: image preview
+     Modal helpers
      =========================== */
   function openImageModal(src){
     const modal = document.getElementById('imgModal'); const img = document.getElementById('imgModalImg');
@@ -443,14 +441,8 @@
     if(closeBtn) closeBtn.focus();
     document.addEventListener('keydown', escHandler);
   }
-
-  function closeImageModal(){
-    const modal = document.getElementById('imgModal');
-    if(modal) modal.style.display = 'none';
-    document.removeEventListener('keydown', escHandler);
-  }
+  function closeImageModal(){ const modal = document.getElementById('imgModal'); if(modal) modal.style.display = 'none'; document.removeEventListener('keydown', escHandler); }
   function escHandler(e){ if(e.key === 'Escape') closeImageModal(); }
-
   document.addEventListener('click', (e) => {
     const m = document.getElementById('imgModal');
     if(!m || m.style.display !== 'flex') return;
@@ -458,7 +450,7 @@
   });
 
   /* ===========================
-     Init bindings
+     Init
      =========================== */
   document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('startBtn');
@@ -482,7 +474,11 @@
 
       const si = document.getElementById('searchInput');
       const ac = localStorage.getItem('activeCategory');
-      if(ac) applyCategoryTheme(ac);
+      if(ac) {
+        // apply category theme for preview
+        const theme = applyCategoryTheme(ac);
+        document.body.style.background = theme.bg;
+      }
 
       if(si){
         si.addEventListener('focus', () => manageChecklistToggle(localStorage.getItem('activeCategory'), { showTitle: false }));
@@ -511,7 +507,7 @@
     const modalCloseBtn = document.getElementById('modalCloseBtn'); if(modalCloseBtn) modalCloseBtn.onclick = closeImageModal;
   });
 
-  // Expose helpers for quick debugging (optional)
+  // expose quick helpers (debug)
   window.__AC = { renderItems, renderDetail, openCategoryModal, closeCategoryModal, showChecklist, hideChecklist };
 
 })();
