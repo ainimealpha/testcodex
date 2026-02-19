@@ -235,9 +235,6 @@
     if(!category || !hasData() || !DATA[category]) { goHome(); return; }
     const theme = applyCategoryTheme(category);
 
-    // set page background specifically for items page (pastel gradient)
-    document.body.style.background = theme.bg;
-
     const data = DATA[category];
     const title = document.getElementById('categoryTitle'); if(title) title.textContent = data.title || category;
 
@@ -380,17 +377,16 @@
     const wrapper = document.createElement('div'); wrapper.className = 'detail-wrapper';
 
     // hero
-    const heroCard = document.createElement('div'); heroCard.className = 'detail-card hero-card';
+    const heroCard = document.createElement('div'); heroCard.className = 'hero-card';
     const heroImg = document.createElement('img'); heroImg.className = 'hero-img'; heroImg.src = (selected.images && selected.images.main) ? selected.images.main : FALLBACK; heroImg.alt = selected.name || '';
     heroCard.appendChild(heroImg);
 
     const heroOverlay = document.createElement('div'); heroOverlay.className = 'hero-overlay';
     const titleRow = document.createElement('div'); titleRow.className = 'detail-title-row';
-    titleRow.style.display='flex'; titleRow.style.justifyContent='space-between'; titleRow.style.alignItems='center';
-    const h2 = document.createElement('h2'); h2.textContent = selected.name || ''; h2.style.margin='0';
+    const h2 = document.createElement('h2'); h2.textContent = selected.name || '';
     titleRow.appendChild(h2);
     const raritySpan = document.createElement('span'); raritySpan.className='detail-rarity-inline'; raritySpan.textContent = selected.rarity || '';
-    raritySpan.style.background = 'rgba(0,0,0,0.6)'; raritySpan.style.color='#fff'; raritySpan.style.padding='6px 10px'; raritySpan.style.borderRadius='8px'; raritySpan.style.fontWeight='900';
+    raritySpan.style.background = 'rgba(0,0,0,0.8)'; raritySpan.style.color='#fff'; raritySpan.style.padding='6px 12px'; raritySpan.style.borderRadius='8px'; raritySpan.style.fontWeight='900';
     titleRow.appendChild(raritySpan);
     heroOverlay.appendChild(titleRow);
 
@@ -400,7 +396,6 @@
     const tagRow = document.createElement('div'); tagRow.className='detail-tag-row';
     (selected.tags || []).forEach(t => {
       const sp = document.createElement('span'); sp.className='tag'; sp.textContent = t.toUpperCase();
-      sp.style.cursor = 'pointer';
       sp.addEventListener('click', (ev) => {
         ev.stopPropagation();
         const detailFilter = { tags: [t], rarities: [], category: category, autoApply: true };
@@ -412,8 +407,8 @@
     });
     heroOverlay.appendChild(tagRow);
 
-    heroCard.appendChild(heroOverlay);
     wrapper.appendChild(heroCard);
+    wrapper.appendChild(heroOverlay);
 
     if(selected.story && String(selected.story).trim().length > 0){
       const story = document.createElement('div'); story.className = 'story-card';
