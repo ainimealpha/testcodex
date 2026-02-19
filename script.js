@@ -235,10 +235,13 @@
     if(!category || !hasData() || !DATA[category]) { goHome(); return; }
     const theme = applyCategoryTheme(category);
 
+    // set page background specifically for items page (pastel gradient)
+    document.body.style.background = theme.bg;
+
     const data = DATA[category];
     const title = document.getElementById('categoryTitle'); if(title) title.textContent = data.title || category;
 
-    // small logo
+    // small logo - masukkan ke title-wrap agar sejajar dengan judul
     const logoWrap = document.getElementById('categoryLogoWrap');
     if(logoWrap){
       logoWrap.innerHTML = '';
@@ -246,6 +249,11 @@
       const logoUrl = (first && first.images && first.images.main) ? first.images.main : FALLBACK;
       const logoImg = document.createElement('img'); logoImg.src = logoUrl; logoImg.alt = data.title || ''; logoImg.className = 'category-small-logo';
       logoWrap.appendChild(logoImg);
+      // pastikan parent dari logoWrap adalah title-wrap agar sejajar
+      const titleWrap = document.querySelector('.title-wrap');
+      if(titleWrap && !titleWrap.contains(logoWrap)){
+        titleWrap.appendChild(logoWrap);
+      }
     }
 
     // determine filters
