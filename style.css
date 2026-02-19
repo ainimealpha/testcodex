@@ -1,227 +1,222 @@
-/* style.css - Revision: fix home small scroll + detail page spacing + slider horizontal pan issues
-   Only CSS changes. Mobile-first, minimal, do not touch JS/HTML.
-*/
+/* style.css - REVISI TOTAL: NO SCROLL HOME & SPACIOUS DETAIL */
 
-/* Reset & base */
-*{box-sizing:border-box;}
-html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Roboto,system-ui,-apple-system,"Helvetica Neue",Arial;}
+* { box-sizing: border-box; }
 
-/* Prevent horizontal pan globally */
-html, body { overflow-x: hidden; -webkit-overflow-scrolling: touch; }
-
-/* Make home page non-scrollable (only when body has class "home-page") */
-body.home-page {
-  height:100vh;
-  overflow: hidden; /* disable vertical scrolling on home */
+html, body { 
+  margin: 0; 
+  padding: 0;
+  font-family: Inter, Segoe UI, Roboto, system-ui, -apple-system, Arial;
+  -webkit-font-smoothing: antialiased;
+  width: 100%;
 }
 
-/* Page background (kept neutral, will be overridden per-category from script) */
-body{background:linear-gradient(180deg,#f6f0ff,#e6f7ff);color:#222;-webkit-font-smoothing:antialiased;}
+/* FIX PAGE 1: Hard Lock Scroll */
+body.home-page {
+  height: 100dvh; /* Dynamic Viewport Height biar pas di HP */
+  overflow: hidden !important; 
+  position: fixed; 
+  width: 100%;
+}
 
-/* CSS variables */
-:root{
+body { 
+  background: linear-gradient(180deg,#f6f0ff,#e6f7ff); 
+  color: #222; 
+  min-height: 100vh;
+}
+
+:root {
   --tag-bg: #fff3cd;
   --accent-color: #ffd54f;
   --muted: #6b6b6b;
 }
 
-/* container */
-.container{max-width:1100px;margin:0 auto;padding:14px;position:relative;}
+/* Container */
+.container { max-width: 1100px; margin: 0 auto; padding: 14px; position: relative; }
 
-/* HOME: ensure container fits exactly viewport and cannot cause tiny extra scroll */
-.home-page .container{
-  min-height: 100vh; /* occupy viewport height */
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:12px;
-  padding-bottom: 0; /* remove extra bottom padding that caused small scroll */
-  overflow: hidden; /* prevent inner overflow on home */
+/* HOME LAYOUT FIX */
+.home-page .container {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 30px; /* Jarak antar elemen di Home biar gak sumpek */
+  padding: 20px;
 }
 
-/* logo */
-.logo{font-weight:900;font-size:44px;text-align:center;margin:6px 0;font-family:Georgia,serif;color:#4b2673;text-transform:uppercase;}
+/* Logo */
+.logo { font-weight: 900; font-size: 44px; text-align: center; margin: 0; font-family: Georgia, serif; color: #4b2673; text-transform: uppercase; }
 
-/* START button: slightly bigger (per request) */
-.start-wrap{display:flex;justify-content:center;position:relative;z-index:10;}
-.start-wrap-lowered{margin-top:0;}
-.start-btn{background:linear-gradient(135deg,#8ad7ff,#cfa6ff);border:none;padding:18px 36px;border-radius:18px;font-weight:900;font-size:20px;cursor:pointer;color:white;box-shadow:0 18px 40px rgba(70,20,120,0.18);}
-.start-btn-large{padding:40px 64px;font-size:44px;border-radius:32px;width:min(720px,92%);}
+/* START Button */
+.start-wrap { display: flex; justify-content: center; width: 100%; z-index: 10; }
+.start-btn { 
+  background: linear-gradient(135deg,#8ad7ff,#cfa6ff); 
+  border: none; 
+  cursor: pointer; 
+  color: white; 
+  box-shadow: 0 18px 40px rgba(70,20,120,0.18); 
+  transition: transform 0.2s;
+}
+.start-btn-large { 
+  padding: 25px 50px; 
+  font-size: 36px; 
+  border-radius: 24px; 
+  width: min(500px, 90%); 
+  font-weight: 900;
+}
+.start-btn:active { transform: scale(0.96); }
 
-/* hero center */
-.hero-center{display:flex;flex-direction:column;align-items:center;text-align:center;}
-.subtitle{color:#444;margin:8px 0 0 0;font-size:13px;text-align:center;}
-.subtitle-small{color:#666;margin-top:6px;font-size:12px;text-align:center;}
+/* Hero home text */
+.hero-center { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }
+.season-line { font-weight: 800; color: #4b2673; font-size: 18px; }
+.arc-line { font-weight: 500; color: #666; font-size: 14px; }
+.subtitle { color: #444; margin: 10px 0 0 0; font-size: 14px; font-weight: 600; }
+.subtitle-small { color: #888; margin: 4px 0 0 0; font-size: 12px; }
 
-/* Category Modal - unchanged behavior, only safe styles */
-.category-modal{position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);z-index:9999;padding:12px;}
-.category-modal.hidden{display:none;}
-.category-modal-content{width:100%;max-width:920px;background:linear-gradient(180deg,#fff,#fffef6);border-radius:12px;padding:14px;box-shadow:0 30px 80px rgba(0,0,0,0.4);max-height:86vh;overflow:auto;}
-.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
-.modal-close-btn{background:linear-gradient(90deg,#ffffff,#f0f0f5);border:none;padding:8px 10px;border-radius:10px;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,0.06);font-weight:800;}
+/* CATEGORY MODAL */
+.category-modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); z-index: 9999; padding: 16px; }
+.category-modal.hidden { display: none; }
+.category-modal-content { 
+  width: 100%; 
+  max-width: 800px; 
+  background: #fff; 
+  border-radius: 20px; 
+  padding: 24px; 
+  max-height: 85vh; 
+  overflow-y: auto; 
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.modal-close-btn { background: #eee; border: none; padding: 10px 14px; border-radius: 12px; font-weight: 800; cursor: pointer; }
+.category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.modal-cat-card { background: #f9f9f9; padding: 12px; border-radius: 16px; text-align: center; cursor: pointer; border: 1px solid #eee; transition: 0.2s; }
+.modal-cat-card:active { transform: scale(0.95); }
+.modal-cat-thumb { width: 100%; height: 85px; object-fit: cover; border-radius: 10px; margin-bottom: 10px; }
+.modal-cat-title { font-size: 13px; font-weight: 800; margin: 0; }
 
-/* category grid 3 columns */
-.category-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.modal-cat-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;text-align:center;border-radius:10px;background:linear-gradient(180deg,#fff,#fffaf0);box-shadow:0 10px 30px rgba(0,0,0,0.06);cursor:pointer;}
-.modal-cat-thumb{width:100%;height:88px;object-fit:cover;border-radius:8px;}
-.modal-cat-title{font-size:14px;margin:0;font-weight:800;color:#222;}
+/* ITEMS PAGE */
+.items-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-top: 10px; }
+.title { font-size: 24px; font-weight: 900; margin: 0; }
+.controls { display: flex; gap: 10px; margin-bottom: 20px; }
+input[type="search"] { flex: 1; padding: 16px; border-radius: 16px; border: 1px solid #ddd; outline: none; font-size: 15px; }
 
-/* ITEMS header */
-.items-header{display:flex;align-items:center;justify-content:flex-start;gap:12px;margin-bottom:12px;position:relative;padding-right:60px;}
-.title{margin:0;font-size:18px;font-weight:800;color:#221133;}
-.category-small-logo{width:44px;height:44px;border-radius:8px;object-fit:cover;}
+/* Grid Items */
+.items-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.item-card-grid { background: #fff; padding: 10px; border-radius: 18px; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+.grid-thumb { width: 100%; height: 115px; object-fit: cover; border-radius: 12px; }
+.grid-item-name { font-size: 13px; font-weight: 800; margin: 8px 0 0 2px; }
 
-/* items back (right top) */
-.items-back{position:absolute;right:8px;top:8px;}
-
-/* modern-back base */
-.modern-back{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(90deg,#6b46ff,#4da6ff);color:#fff;border:none;padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:800;box-shadow:0 10px 30px rgba(77,166,255,0.12);}
-
-/* controls spacing */
-.controls{display:flex;gap:10px;align-items:center;margin:12px 0;padding-bottom:4px;}
-input[type="search"]{flex:1;padding:12px;border-radius:12px;border:none;font-size:14px;box-shadow:0 8px 22px rgba(0,0,0,0.06);}
-
-/* checklist styles */
-.checklist-panel{background:linear-gradient(180deg,#fff,#fffef6);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 22px 60px rgba(16,24,40,0.06);}
-.checklist-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(0,0,0,0.04);}
-.checklist-title{font-weight:900;font-size:16px;color:#222;}
-.checklist-subtitle{font-weight:800;margin-bottom:8px;color:var(--muted);font-size:15px;}
-.checklist-chips{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-.modern-close{background:linear-gradient(90deg,#f0f0f4,#dcdcf0);border:none;padding:8px;border-radius:10px;cursor:pointer;font-weight:800;}
-
-/* checklist toggle button */
-.checklist-toggle{background:linear-gradient(90deg,#4da6ff,#6b46ff);color:white;padding:10px 14px;border-radius:12px;border:none;font-weight:900;box-shadow:0 14px 36px rgba(77,117,255,0.12);cursor:pointer;}
-
-/* chips */
-.chip{display:inline-flex;align-items:center;border-radius:999px;padding:0;margin:0;user-select:none;cursor:pointer;}
-.chip input{display:none;}
-.chip span{display:inline-block;padding:8px 12px;border-radius:999px;background:var(--tag-bg);font-weight:800;font-size:13px;color:#222;border:1px solid rgba(0,0,0,0.04);}
-.chip input:checked + span{background:linear-gradient(90deg,var(--accent-color),#ffd57f);color:#fff;}
-
-/* rarity spacing & apply */
-.rarity-chips-row{margin-top:14px;}
-.checklist-actions{display:flex;justify-content:flex-end;margin-top:16px;}
-.apply-btn{background:var(--accent-color);color:white;border:none;padding:12px 18px;border-radius:12px;font-weight:900;cursor:pointer;box-shadow:0 14px 36px rgba(0,0,0,0.12);}
-
-/* items grid */
-.items-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px;}
-@media(min-width:420px){ .items-grid{grid-template-columns:repeat(4,1fr);} }
-@media(min-width:900px){ .items-grid{grid-template-columns:repeat(6,1fr);} }
-
-/* card base */
-.card{background:linear-gradient(180deg,#fff,#fffef6);border-radius:12px;padding:8px;box-shadow:0 8px 22px rgba(0,0,0,0.06);text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:8px;}
-.item-card-grid{padding:6px;}
-.grid-thumb{width:100%;height:120px;object-fit:cover;border-radius:8px;display:block;}
-.thumb-wrap{position:relative;}
-.rarity-badge{position:absolute;top:8px;right:8px;background:linear-gradient(90deg,#222,#444);color:#fff;padding:6px 8px;border-radius:8px;font-weight:900;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,0.18);z-index:4;}
-
-/* overlay tags: hidden by default; show only when items container has class filters-active */
-.img-overlay-tags{position:absolute;left:8px;bottom:8px;display:flex;gap:6px;z-index:4;opacity:0;transition:opacity .18s;}
-.items-grid.filters-active .img-overlay-tags{opacity:1;}
-.overlay-tag{background:rgba(0,0,0,0.6);color:#fff;padding:4px 8px;border-radius:999px;font-weight:800;font-size:10px;}
-
-/* item name */
-.grid-item-name{font-size:14px;font-weight:800;margin:0;padding-left:2px;}
-
-/* ---------------------------
-   DETAIL PAGE: spacing fixes
-   --------------------------- */
-/* Ensure detail wrapper has clear spacing from top and bottom, so elements won't stick to each other */
-.detail-wrapper{
-  display:flex;
-  flex-direction:column;
-  gap:18px;               /* larger gap between blocks */
-  padding: 20px 14px 140px; /* top/right/left/bottom -> bottom kept for home button area */
-  min-height: calc(100vh - 60px);
-  box-sizing:border-box;
+/* ------------------------------------------------------
+   FIX PAGE 3: DETAIL UI (GAK NEMPEL, LEBIH RAPI)
+   ------------------------------------------------------ */
+.detail-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 32px; /* JARAK ANTAR KONTEN DIPERBESAR */
+  padding: 100px 16px 140px; /* Padding top & bottom gede biar gak nabrak button */
+  min-height: 100vh;
 }
 
-/* Hero: add margin and padding tweaks to avoid overlap with top back button */
-.hero-card{position:relative;border-radius:12px;overflow:hidden;margin-top:6px;padding-bottom:4px;}
-.hero-img{width:100%;height:260px;object-fit:cover;border-radius:10px;display:block;}
-.hero-overlay{
-  position:absolute;
-  left:14px;
-  right:14px;
-  bottom:14px;
-  background:linear-gradient(180deg,rgba(255,255,255,0.0),rgba(255,255,255,0.98));
-  padding:16px;
-  border-radius:12px;
-  box-shadow:0 12px 36px rgba(0,0,0,0.12);
+/* Card Utama Detail */
+.hero-card { position: relative; width: 100%; }
+.hero-img { 
+  width: 100%; 
+  height: 340px; 
+  object-fit: cover; 
+  border-radius: 28px; 
+  box-shadow: 0 25px 50px rgba(0,0,0,0.12);
 }
 
-/* title row: make sure rarity aligned right and spaced */
-.detail-title-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:6px;}
-.hero-desc{margin:8px 0 0 0;color:#333;font-size:15px;line-height:1.5;}
-
-/* tags */
-.detail-tag-row{display:flex;gap:8px;flex-wrap:wrap; margin-top:6px;}
-.tag{background:var(--tag-bg);padding:6px 10px;border-radius:999px;font-weight:800;font-size:12px;color:#222;display:inline-block;}
-
-/* story */
-.story-card{background:linear-gradient(180deg,#fff,#fffef6);border-radius:12px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,0.06);margin-top:6px;}
-
-/* ---------------------------
-   EXTRAS SLIDER: prevent horizontal pan and tighten spacing
-   --------------------------- */
-/* wrapper */
-.extras-slider-wrapper{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:12px;width:100%;box-sizing:border-box;}
-
-/* slider: hide overflow - allow vertical pan only */
-.extras-slider{
-  display:flex;
-  gap:12px;
-  align-items:center;
-  justify-content:center;
-  width:100%;
-  overflow:hidden;        /* prevent slider from creating horizontal overflow */
-  touch-action: pan-y;    /* allow vertical scrolling only; disable horizontal page pan on mobile */
-  -webkit-overflow-scrolling: touch;
-  padding-left:6px;       /* small padding to avoid touching edges */
-  padding-right:6px;
+.hero-overlay {
+  background: white;
+  margin: -50px 14px 0; /* Gaya floating card */
+  padding: 30px; /* Padding dalam card diperbesar */
+  border-radius: 24px;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.08);
 }
 
-/* slide base: fixed width to control layout */
-.extras-slide{
-  flex: 0 0 auto;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  margin: 0 6px;
+.detail-title-row { 
+  margin-bottom: 20px; /* Jarak judul ke bawah */
+}
+.detail-title-row h2 { font-size: 28px; font-weight: 900; margin: 0; color: #1a1a1a; letter-spacing: -0.5px; }
+
+.hero-desc { 
+  color: #555; 
+  font-size: 16px; 
+  line-height: 1.6; 
+  margin: 0 0 25px 0; /* Jarak deskripsi ke tag */
 }
 
-/* image sizing tuned for mobile - center bigger, sides smaller */
-.extras-slide.side img{ width:24vw; max-width:120px; height:auto; opacity:0.95; transform:scale(0.98); border-radius:10px; }
-.extras-slide.active img{ width:56vw; max-width:320px; height:auto; opacity:1; transform:scale(1); border-radius:12px; }
+.detail-tag-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+.tag { 
+  background: var(--tag-bg); 
+  padding: 8px 16px; 
+  border-radius: 12px; 
+  font-size: 12px; 
+  font-weight: 800; 
+  color: #4b2673; 
+  text-transform: uppercase;
+}
 
-/* images transition */
-.extras-slide img{border-radius:12px;object-fit:cover;box-shadow:0 12px 36px rgba(0,0,0,0.08);display:block;transition: transform .18s ease, opacity .18s ease;}
+/* Story Card */
+.story-card { 
+  background: white; 
+  padding: 30px; 
+  border-radius: 24px; 
+  box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+}
+.story-card h3 { margin: 0 0 16px 0; font-size: 20px; font-weight: 900; color: #333; }
+.story-card p { margin: 0; color: #444; line-height: 1.8; font-size: 15px; }
 
-/* nav under slider for easy large tap targets */
-.extras-nav-wrap{display:flex;gap:18px;align-items:center;justify-content:center;margin-top:12px;}
-.slider-nav{background:linear-gradient(90deg,#f0f0f8,#e8e8ff);border:none;font-size:18px;color:#222;cursor:pointer;padding:12px 16px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,0.06);}
+/* Slider Extras (Spacing antar gambar) */
+.extras-slider-wrapper { margin-top: 15px; }
+.extras-slider { 
+  display: flex; 
+  gap: 20px; /* Jarak antar slide gambar */
+  justify-content: center; 
+  align-items: center; 
+}
+.extras-slide img { border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+.extras-slide.active img { width: 240px; height: 240px; }
+.extras-slide.side img { width: 110px; height: 110px; opacity: 0.5; }
 
-/* modal */
-.img-modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:18px;}
-.img-modal-content{background:white;padding:12px;border-radius:12px;max-width:980px;width:100%;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.28);text-align:center;}
-.img-modal-content img{width:100%;max-height:70vh;object-fit:contain;border-radius:8px;}
-.modal-close{position:absolute;right:12px;top:12px;background:#222;color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;}
+/* Fixed Buttons Positioning */
+.detail-back-right { 
+  position: fixed; 
+  top: 24px; 
+  right: 20px; 
+  z-index: 10005; 
+  background: rgba(0,0,0,0.85); 
+  backdrop-filter: blur(10px);
+  padding: 12px 18px;
+  border-radius: 14px;
+}
 
-/* detail back fixed top-right - keep clickable and not overlap text due to padding in .detail-wrapper */
-.detail-back-right{position:fixed;top:12px;right:12px;z-index:10005;padding:10px 14px;border-radius:12px;}
+.detail-home-modern {
+  position: fixed;
+  bottom: 35px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10003;
+  width: 160px;
+  height: 54px;
+  border-radius: 27px;
+  border: none;
+  background: #6b46ff;
+  color: white;
+  font-weight: 900;
+  font-size: 16px;
+  box-shadow: 0 15px 35px rgba(107,70,255,0.4);
+  cursor: pointer;
+}
 
-/* home button modern centered bottom */
-.detail-home-modern{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:10003;padding:12px 18px;border-radius:999px;background:linear-gradient(90deg,#4da6ff,#6b46ff);color:#fff;font-weight:900;box-shadow:0 20px 50px rgba(77,117,255,0.14);border:none;}
-
-/* Responsive tweaks */
-@media(max-width:640px){
-  .start-btn-large{padding:34px 48px;font-size:36px;}
-  .modal-cat-thumb{height:80px;}
-  .grid-thumb{height:100px;}
-  .extras-slide.side img{width:90px;height:auto;}
-  .extras-slide.active img{width:200px;height:auto;}
-  .items-grid{grid-template-columns:repeat(3,1fr);}
-  .items-back{right:6px;top:6px;}
-  .modal-close-btn{padding:6px;border-radius:8px;}
+/* Responsive */
+@media (max-width: 480px) {
+  .logo { font-size: 34px; }
+  .start-btn-large { font-size: 30px; padding: 20px; }
+  .items-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero-img { height: 280px; }
+  .hero-overlay { padding: 24px; margin: -40px 10px 0; }
+  .detail-wrapper { gap: 24px; padding-top: 90px; }
 }
